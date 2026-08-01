@@ -312,9 +312,12 @@ export default function KittyChat() {
       const savedSession = localStorage.getItem(ACTIVE_SESSION_KEY);
       if (savedSession) {
         const sessionData = JSON.parse(savedSession);
-        if (sessionData?.name) {
-          setName(sessionData.name);
+        const sName = (sessionData?.name || "").trim();
+        if (sName.length >= 2) {
+          setName(sName);
           setScreen("chat");
+        } else {
+          localStorage.removeItem(ACTIVE_SESSION_KEY);
         }
       }
     } catch (e) {
@@ -442,7 +445,7 @@ export default function KittyChat() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(ACTIVE_SESSION_KEY);
+    localStorage.clear();
     setScreen("auth");
     setName("");
     setInput("");
