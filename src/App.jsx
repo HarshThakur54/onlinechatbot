@@ -496,26 +496,30 @@ export default function KittyChat() {
   };
 
   const filteredMessages = messages.filter((m) => {
-    if (activeTarget === "global") {
-      return !m.recipientTarget || m.recipientTarget === "global";
+    const targetKey = (activeTarget || "global").trim().toLowerCase();
+    const recipientKey = (m.recipientTarget || "global").trim().toLowerCase();
+
+    if (targetKey === "global") {
+      return !m.recipientTarget || recipientKey === "global";
     } else {
       const myNameKey = name.trim().toLowerCase();
-      const targetKey = activeTarget.toLowerCase();
+      const senderKey = (m.senderName || "").trim().toLowerCase();
       return (
-        ((m.senderName || "").toLowerCase() === myNameKey && (m.recipientTarget || "").toLowerCase() === targetKey) ||
-        ((m.senderName || "").toLowerCase() === targetKey && (m.recipientTarget || "").toLowerCase() === myNameKey)
+        (senderKey === myNameKey && recipientKey === targetKey) ||
+        (senderKey === targetKey && recipientKey === myNameKey)
       );
     }
   });
 
   const getUnreadCount = (targetName) => {
     const myNameKey = name.trim().toLowerCase();
-    const targetKey = targetName.toLowerCase();
+    const targetKey = (targetName || "").trim().toLowerCase();
+    const activeKey = (activeTarget || "").trim().toLowerCase();
     return messages.filter(
       (m) =>
-        (m.senderName || "").toLowerCase() === targetKey &&
-        (m.recipientTarget || "").toLowerCase() === myNameKey &&
-        activeTarget.toLowerCase() !== targetKey
+        (m.senderName || "").trim().toLowerCase() === targetKey &&
+        (m.recipientTarget || "").trim().toLowerCase() === myNameKey &&
+        activeKey !== targetKey
     ).length;
   };
 
@@ -531,17 +535,28 @@ export default function KittyChat() {
     return false;
   };
 
-  const onlineUsersList = registeredUsers.filter((u) => isUserOnline(u.name));
-  const offlineUsersList = registeredUsers.filter((u) => !isUserOnline(u.name));
+  // Deduplicate registered users case-insensitively
+  const uniqueUsersList = registeredUsers.reduce((acc, u) => {
+    const uName = (u.name || "").trim();
+    if (!uName) return acc;
+    const uKey = uName.toLowerCase();
+    if (!acc.some((existing) => (existing.name || "").trim().toLowerCase() === uKey)) {
+      acc.push(u);
+    }
+    return acc;
+  }, []);
 
-  const otherRegisteredUsers = registeredUsers.filter(
-    (u) => (u.name || "").toLowerCase() !== name.trim().toLowerCase()
+  const onlineUsersList = uniqueUsersList.filter((u) => isUserOnline(u.name));
+  const offlineUsersList = uniqueUsersList.filter((u) => !isUserOnline(u.name));
+
+  const otherRegisteredUsers = uniqueUsersList.filter(
+    (u) => (u.name || "").trim().toLowerCase() !== name.trim().toLowerCase()
   );
 
   const activeTargetUserObj =
-    activeTarget === "global"
+    activeTarget.toLowerCase() === "global"
       ? null
-      : registeredUsers.find((u) => (u.name || "").toLowerCase() === activeTarget.toLowerCase());
+      : uniqueUsersList.find((u) => (u.name || "").trim().toLowerCase() === activeTarget.trim().toLowerCase());
 
   const styles = {
     page: {
