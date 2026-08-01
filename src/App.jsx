@@ -365,6 +365,9 @@ export default function KittyChat() {
           name: name.trim(),
           lastActive: Date.now(),
         }, { merge: true });
+
+        // Auto-clean partial test names (h, ha, har, hars)
+        purgePartialDraftUsers(name);
       } catch (e) {
         console.error("Presence update failed", e);
       }
@@ -376,13 +379,29 @@ export default function KittyChat() {
     return () => clearInterval(interval);
   }, [name]);
 
-  const validName = (v) => Boolean(v && v.trim().length > 0);
+  const validName = (v) => Boolean(v && v.trim().length >= 2);
+
+  // Automatically delete partial test draft names (h, ha, har, hars) from Firestore
+  const purgePartialDraftUsers = async (finalName) => {
+    const finalLow = finalName.trim().toLowerCase();
+    try {
+      const snapshot = await getDocs(collection(db, "users"));
+      snapshot.forEach(async (document) => {
+        const uName = (document.data().name || "").trim().toLowerCase();
+        if (uName !== finalLow && finalLow.startsWith(uName)) {
+          await deleteDoc(doc(db, "users", document.id));
+        }
+      });
+    } catch (e) {
+      console.error("Draft user purge error", e);
+    }
+  };
 
   const handleLogin = () => {
     setError("");
     const trimmed = name.trim();
     if (!validName(trimmed)) {
-      setError("Please enter your name to continue.");
+      setError("Please enter a name with at least 2 characters.");
       return;
     }
 
@@ -393,7 +412,9 @@ export default function KittyChat() {
     setName(trimmed);
     setScreen("chat");
 
-    // Sync user record to Firestore in background
+    // Purge old partial draft profiles (h, ha, har, hars) and sync active user
+    purgePartialDraftUsers(trimmed);
+
     setDoc(doc(db, "users", myNameKey), {
       name: trimmed,
       registeredAt: Date.now(),
@@ -478,14 +499,26 @@ export default function KittyChat() {
     }
   };
 
-  // 🌐 RESET ALL CHATS EVERYWHERE IN FIRESTORE
+  // 🌐 RESET ALL CHATS AND CLEAN INACTIVE TEST USERS IN FIRESTORE
   const resetAllChats = async () => {
     try {
-      const snapshot = await getDocs(collection(db, "messages"));
-      snapshot.forEach(async (document) => {
+      // 1. Delete all messages
+      const msgSnapshot = await getDocs(collection(db, "messages"));
+      msgSnapshot.forEach(async (document) => {
         await deleteDoc(doc(db, "messages", document.id));
       });
-      showToast("🧹 ALL Chats & DMs Reset!");
+
+      // 2. Delete test/partial user records (like h, ha, har, hars)
+      const userSnapshot = await getDocs(collection(db, "users"));
+      const myNameKey = name.trim().toLowerCase();
+      userSnapshot.forEach(async (document) => {
+        const uName = (document.data().name || "").trim().toLowerCase();
+        if (uName !== myNameKey && (uName.length < 2 || Date.now() - (document.data().lastActive || 0) > 60000)) {
+          await deleteDoc(doc(db, "users", document.id));
+        }
+      });
+
+      showToast("🧹 ALL Chats & Test Users Reset!");
     } catch (e) {
       console.error("Reset all chats failed", e);
     }
@@ -535,12 +568,15 @@ export default function KittyChat() {
     return false;
   };
 
-  // Deduplicate registered users case-insensitively
+  // Deduplicate & filter out partial single/two-letter test names unless active
   const uniqueUsersList = registeredUsers.reduce((acc, u) => {
     const uName = (u.name || "").trim();
-    if (!uName) return acc;
+    if (!uName || uName.length < 2) return acc;
     const uKey = uName.toLowerCase();
-    if (!acc.some((existing) => (existing.name || "").trim().toLowerCase() === uKey)) {
+    const isOnline = isUserOnline(uName);
+    const isMe = uKey === name.trim().toLowerCase();
+
+    if ((isOnline || isMe) && !acc.some((existing) => (existing.name || "").trim().toLowerCase() === uKey)) {
       acc.push(u);
     }
     return acc;
