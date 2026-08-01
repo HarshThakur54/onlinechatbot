@@ -502,7 +502,7 @@ export default function KittyChat() {
 
         <div style={styles.card}>
           <div style={{ display: "flex", justifyContent: "center" }}>{HELLO_KITTY_AVATAR(68)}</div>
-          <div style={styles.title}>{screen === "auth" ? "Hello Kitty Chat 🎀" : "Almost there!"}</div>
+          <div style={styles.title}>{screen === "auth" ? "Pyaru Pyaru Baatee 🎀" : "Almost there!"}</div>
           <div style={styles.subtitle}>
             {screen === "auth"
               ? "Enter your name or email to join the chat"
@@ -659,7 +659,7 @@ export default function KittyChat() {
             <div>
               <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 16, color: "#4A3B47", fontWeight: 600 }}>
                 {activeTarget === "global"
-                  ? "Hello Kitty Chat 🎀"
+                  ? "Pyaru Pyaru Baatee 🎀"
                   : `💬 Chat with ${activeTargetUserObj?.username || activeTarget}`}
               </div>
               <div style={{ fontSize: 12, color: "#C79AB0", display: "flex", alignItems: "center", gap: 6 }}>
@@ -958,7 +958,7 @@ export default function KittyChat() {
               {HELLO_KITTY_AVATAR(50)}
               <div style={{ marginTop: 12, fontFamily: "'Fredoka', sans-serif", fontSize: 16 }}>
                 {activeTarget === "global"
-                  ? "Welcome to Hello Kitty Chat! 🎀"
+                  ? "Welcome to Pyaru Pyaru Baatee! 🎀"
                   : `No messages with ${activeTargetUserObj?.username || activeTarget} yet!`}
               </div>
               <div style={{ fontSize: 12.5, marginTop: 4 }}>

@@ -1,4 +1,4 @@
-# Bow Bot 🎀
+# Pyaru Pyaru Baatee 🎀
 
 Pastel kitty-bow themed chatbot. Email-only login (no password) — first-time
 email picks a username, returning email logs straight back in.
