@@ -1,4 +1,16 @@
 import { useState, useRef, useEffect } from "react";
+import { db } from "./firebase";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  doc,
+  setDoc,
+  deleteDoc,
+  getDocs
+} from "firebase/firestore";
 
 // Hello Kitty Bow SVG with animation support
 const BOW = (size = 24, color = "#E85C8A") => (
@@ -194,11 +206,7 @@ const LOVELY_MESSAGES = [
   "✨ Life is sweeter when we share lovely moments together! 🎀",
 ];
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v11";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v11";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v11";
-const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v11";
-const PRESENCE_MAP_KEY = "kitty_chat_presence_map_v11";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v12";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -222,9 +230,8 @@ export default function KittyChat() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
-  // Registered Users Registry & Presence map
+  // Registered Users Registry
   const [registeredUsers, setRegisteredUsers] = useState([]);
-  const [onlinePings, setOnlinePings] = useState(new Map());
 
   // Messages & Active Chat Target ("global" or user name)
   const [activeTarget, setActiveTarget] = useState("global");
@@ -238,7 +245,6 @@ export default function KittyChat() {
   const [lovelyQuoteIndex, setLovelyQuoteIndex] = useState(0);
 
   const scrollRef = useRef(null);
-  const channelRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // Rotate lovely banner message every 30 seconds
@@ -252,72 +258,6 @@ export default function KittyChat() {
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3000);
-  };
-
-  // Shared presence helper via localStorage
-  const updateSharedPresence = (userNameStr) => {
-    if (!userNameStr) return;
-    try {
-      const raw = localStorage.getItem(PRESENCE_MAP_KEY);
-      const map = raw ? JSON.parse(raw) : {};
-      map[userNameStr.trim().toLowerCase()] = Date.now();
-      localStorage.setItem(PRESENCE_MAP_KEY, JSON.stringify(map));
-    } catch (e) {}
-  };
-
-  const getSharedPresenceMap = () => {
-    try {
-      const raw = localStorage.getItem(PRESENCE_MAP_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  };
-
-  // Load registered users from storage
-  const loadRegisteredUsers = () => {
-    try {
-      const raw = localStorage.getItem(REGISTERED_USERS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  // Register or update user in storage & broadcast
-  const registerUserInStore = (userObj) => {
-    const list = loadRegisteredUsers();
-    const existingIdx = list.findIndex((u) => u.name.toLowerCase() === userObj.name.toLowerCase());
-    let updated;
-    if (existingIdx >= 0) {
-      updated = [...list];
-      updated[existingIdx] = { ...updated[existingIdx], ...userObj, lastActive: Date.now() };
-    } else {
-      updated = [...list, { ...userObj, lastActive: Date.now() }];
-    }
-    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
-    setRegisteredUsers(updated);
-    channelRef.current?.postMessage({ type: "USERS_UPDATED", payload: updated });
-    return updated;
-  };
-
-  // Load messages from storage
-  const loadAllMessages = () => {
-    try {
-      const raw = localStorage.getItem(GLOBAL_MSGS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveAllMessages = (newMsgs) => {
-    try {
-      localStorage.setItem(GLOBAL_MSGS_KEY, JSON.stringify(newMsgs));
-      window.dispatchEvent(new Event("kitty-chat-msgs-sync"));
-    } catch (e) {
-      console.error("Failed to save messages", e);
-    }
   };
 
   // Compress image before saving/sending
@@ -366,11 +306,8 @@ export default function KittyChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, activeTarget, selectedImage]);
 
-  // Initial load + Session Auto-Login on Refresh
+  // Restore Active Session from LocalStorage
   useEffect(() => {
-    setRegisteredUsers(loadRegisteredUsers());
-    setMessages(loadAllMessages());
-
     try {
       const savedSession = localStorage.getItem(ACTIVE_SESSION_KEY);
       if (savedSession) {
@@ -383,175 +320,65 @@ export default function KittyChat() {
     } catch (e) {
       console.error("Failed to restore session", e);
     }
-
-    const syncMessagesAndUsers = () => {
-      const latestMsgs = loadAllMessages();
-      setMessages(latestMsgs);
-
-      const latestUsers = loadRegisteredUsers();
-      setRegisteredUsers(latestUsers);
-    };
-
-    window.addEventListener("storage", syncMessagesAndUsers);
-    window.addEventListener("kitty-chat-msgs-sync", syncMessagesAndUsers);
-
-    return () => {
-      window.removeEventListener("storage", syncMessagesAndUsers);
-      window.removeEventListener("kitty-chat-msgs-sync", syncMessagesAndUsers);
-    };
   }, []);
 
-  // REAL-TIME SYNC HEARTBEAT (Sub-second polling for instant message & user presence update)
+  // 🌐 REAL-TIME FIREBASE FIRESTORE SUBSCRIPTION FOR MESSAGES
+  useEffect(() => {
+    const q = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = [];
+      snapshot.forEach((doc) => {
+        msgs.push({ firestoreId: doc.id, ...doc.data() });
+      });
+      setMessages(msgs);
+    }, (err) => {
+      console.error("Firestore message listener error:", err);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 🌐 REAL-TIME FIREBASE FIRESTORE SUBSCRIPTION FOR USERS & PRESENCE
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+      const usersList = [];
+      snapshot.forEach((doc) => {
+        usersList.push(doc.data());
+      });
+      setRegisteredUsers(usersList);
+    }, (err) => {
+      console.error("Firestore users listener error:", err);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 🌐 HEARTBEAT PRESENCE UPDATE TO FIREBASE FIRESTORE
   useEffect(() => {
     if (!name) return;
 
-    const syncInterval = setInterval(() => {
-      // 1. Check for new messages in localStorage
-      const currentStoredMsgs = loadAllMessages();
-      setMessages((prev) => {
-        if (prev.length !== currentStoredMsgs.length || (prev.length > 0 && currentStoredMsgs.length > 0 && prev[prev.length - 1].id !== currentStoredMsgs[currentStoredMsgs.length - 1].id)) {
-          return currentStoredMsgs;
-        }
-        return prev;
-      });
+    const myNameKey = name.trim().toLowerCase();
 
-      // 2. Check for new registered users
-      const currentStoredUsers = loadRegisteredUsers();
-      setRegisteredUsers((prev) => {
-        if (prev.length !== currentStoredUsers.length) {
-          return currentStoredUsers;
-        }
-        return prev;
-      });
-
-      // 3. Heartbeat update own presence
-      updateSharedPresence(name);
-    }, 600);
-
-    return () => clearInterval(syncInterval);
-  }, [name]);
-
-  // BroadcastChannel Instant Bidirectional Handshake Presence & Messaging
-  useEffect(() => {
-    const channel = new BroadcastChannel(CHANNEL_NAME);
-    channelRef.current = channel;
-
-    const sendMyPing = () => {
-      if (name) {
-        const now = Date.now();
-        channel.postMessage({
-          type: "PRESENCE_PING",
-          payload: { name: name.trim(), timestamp: now },
-        });
-
-        updateSharedPresence(name);
-
-        setOnlinePings((prev) => {
-          const next = new Map(prev);
-          next.set(name.trim().toLowerCase(), now);
-          return next;
-        });
+    const updatePresence = async () => {
+      try {
+        await setDoc(doc(db, "users", myNameKey), {
+          name: name.trim(),
+          lastActive: Date.now(),
+        }, { merge: true });
+      } catch (e) {
+        console.error("Presence update failed", e);
       }
     };
 
-    channel.onmessage = (event) => {
-      const { type, payload } = event.data || {};
-      if (type === "NEW_MESSAGE") {
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === payload.id)) return prev;
-          const updated = [...prev, payload];
-          saveAllMessages(updated);
-          return updated;
-        });
-      } else if (type === "PRESENCE_PING") {
-        if (payload?.name) {
-          const incomingName = payload.name.trim();
-          const incomingKey = incomingName.toLowerCase();
-          const incomingTs = payload.timestamp || Date.now();
+    updatePresence();
+    const interval = setInterval(updatePresence, 3000);
 
-          setOnlinePings((prev) => {
-            const next = new Map(prev);
-            next.set(incomingKey, incomingTs);
-            return next;
-          });
-
-          setRegisteredUsers((prev) => {
-            if (!prev.some((u) => u.name.toLowerCase() === incomingKey)) {
-              const updated = [
-                ...prev,
-                { name: incomingName, registeredAt: Date.now(), lastActive: incomingTs },
-              ];
-              localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
-              return updated;
-            }
-            return prev;
-          });
-
-          if (payload.isInitial) {
-            sendMyPing();
-          }
-        }
-      } else if (type === "USERS_UPDATED") {
-        setRegisteredUsers(payload || []);
-      } else if (type === "RESET_TARGET_CHAT") {
-        const { target, user } = payload || {};
-        setMessages((prev) => {
-          let updated;
-          if (target === "global") {
-            updated = prev.filter((m) => m.recipientTarget && m.recipientTarget !== "global");
-          } else if (target && user) {
-            const tLow = target.toLowerCase();
-            const uLow = user.toLowerCase();
-            updated = prev.filter(
-              (m) =>
-                !(
-                  (m.senderName.toLowerCase() === uLow && m.recipientTarget.toLowerCase() === tLow) ||
-                  (m.senderName.toLowerCase() === tLow && m.recipientTarget.toLowerCase() === uLow)
-                )
-            );
-          } else {
-            updated = prev;
-          }
-          saveAllMessages(updated);
-          return updated;
-        });
-        showToast("🧹 Chat history cleared for active room");
-      } else if (type === "RESET_ALL_CHATS") {
-        setMessages([]);
-        saveAllMessages([]);
-        showToast("🧹 ALL chat history cleared");
-      }
-    };
-
-    if (name) {
-      sendMyPing();
-      const currentList = loadRegisteredUsers();
-      channel.postMessage({ type: "USERS_UPDATED", payload: currentList });
-    }
-
-    const interval = setInterval(() => {
-      sendMyPing();
-      setOnlinePings((prev) => {
-        const now = Date.now();
-        const next = new Map();
-        prev.forEach((lastSeen, uNameKey) => {
-          if (now - lastSeen < 6000) {
-            next.set(uNameKey, lastSeen);
-          }
-        });
-        return next;
-      });
-    }, 1500);
-
-    return () => {
-      clearInterval(interval);
-      channel.close();
-    };
+    return () => clearInterval(interval);
   }, [name]);
 
   const validName = (v) => Boolean(v && v.trim().length > 0);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
     const trimmed = name.trim();
     if (!validName(trimmed)) {
@@ -559,24 +386,22 @@ export default function KittyChat() {
       return;
     }
 
-    const newUser = {
-      name: trimmed,
-      registeredAt: Date.now(),
-      lastActive: Date.now(),
-    };
+    const myNameKey = trimmed.toLowerCase();
 
-    registerUserInStore(newUser);
-    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ name: trimmed }));
-    updateSharedPresence(trimmed);
+    try {
+      await setDoc(doc(db, "users", myNameKey), {
+        name: trimmed,
+        registeredAt: Date.now(),
+        lastActive: Date.now(),
+      }, { merge: true });
 
-    setName(trimmed);
-    setMessages(loadAllMessages());
-    setScreen("chat");
-
-    channelRef.current?.postMessage({
-      type: "PRESENCE_PING",
-      payload: { name: trimmed, isInitial: true, timestamp: Date.now() },
-    });
+      localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ name: trimmed }));
+      setName(trimmed);
+      setScreen("chat");
+    } catch (e) {
+      console.error("Login failed", e);
+      setError("Connection failed. Please try again.");
+    }
   };
 
   const handleLogout = () => {
@@ -588,71 +413,76 @@ export default function KittyChat() {
     setError("");
   };
 
-  const send = () => {
+  // 🌐 SEND MESSAGE TO FIREBASE FIRESTORE REAL-TIME CLOUD DB
+  const send = async () => {
     const text = input.trim();
     if (!text && !selectedImage) return;
 
     const newMsg = {
-      id: Date.now() + "_" + Math.random().toString(36).substr(2, 9),
       senderName: name.trim(),
       recipientTarget: activeTarget,
       content: text,
-      image: selectedImage,
+      image: selectedImage || null,
       timestamp: Date.now(),
     };
 
     setInput("");
     setSelectedImage(null);
 
-    setMessages((prev) => {
-      const updated = [...prev, newMsg];
-      saveAllMessages(updated);
-      return updated;
-    });
-
-    channelRef.current?.postMessage({
-      type: "NEW_MESSAGE",
-      payload: newMsg,
-    });
+    try {
+      await addDoc(collection(db, "messages"), newMsg);
+    } catch (e) {
+      console.error("Send message error", e);
+      showToast("❌ Message failed to send");
+    }
   };
 
-  // Reset ONLY Current Active Chat
-  const resetActiveChat = () => {
+  // 🌐 RESET ONLY CURRENT ACTIVE CHAT IN FIRESTORE
+  const resetActiveChat = async () => {
     const myNameKey = name.trim().toLowerCase();
     const targetKey = activeTarget.toLowerCase();
 
-    setMessages((prev) => {
-      let updated;
-      if (targetKey === "global") {
-        updated = prev.filter((m) => m.recipientTarget && m.recipientTarget !== "global");
-      } else {
-        updated = prev.filter(
-          (m) =>
-            !(
-              (m.senderName.toLowerCase() === myNameKey && m.recipientTarget.toLowerCase() === targetKey) ||
-              (m.senderName.toLowerCase() === targetKey && m.recipientTarget.toLowerCase() === myNameKey)
-            )
-        );
-      }
-      saveAllMessages(updated);
-      return updated;
-    });
-
-    channelRef.current?.postMessage({
-      type: "RESET_TARGET_CHAT",
-      payload: { target: targetKey, user: myNameKey },
-    });
-
-    const roomLabel = targetKey === "global" ? "Group Chat" : `Chat with ${activeTargetUserObj?.name || activeTarget}`;
-    showToast(`🧹 ${roomLabel} Reset!`);
+    try {
+      const snapshot = await getDocs(collection(db, "messages"));
+      snapshot.forEach(async (document) => {
+        const data = document.data();
+        let shouldDelete = false;
+        if (targetKey === "global") {
+          if (!data.recipientTarget || data.recipientTarget === "global") {
+            shouldDelete = true;
+          }
+        } else {
+          const sName = (data.senderName || "").toLowerCase();
+          const rTarget = (data.recipientTarget || "").toLowerCase();
+          if (
+            (sName === myNameKey && rTarget === targetKey) ||
+            (sName === targetKey && rTarget === myNameKey)
+          ) {
+            shouldDelete = true;
+          }
+        }
+        if (shouldDelete) {
+          await deleteDoc(doc(db, "messages", document.id));
+        }
+      });
+      const roomLabel = targetKey === "global" ? "Group Chat" : `Chat with ${activeTargetUserObj?.name || activeTarget}`;
+      showToast(`🧹 ${roomLabel} Reset!`);
+    } catch (e) {
+      console.error("Reset chat failed", e);
+    }
   };
 
-  // Reset ALL Chats Everywhere
-  const resetAllChats = () => {
-    setMessages([]);
-    saveAllMessages([]);
-    channelRef.current?.postMessage({ type: "RESET_ALL_CHATS" });
-    showToast("🧹 ALL Chats & DMs Reset!");
+  // 🌐 RESET ALL CHATS EVERYWHERE IN FIRESTORE
+  const resetAllChats = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "messages"));
+      snapshot.forEach(async (document) => {
+        await deleteDoc(doc(db, "messages", document.id));
+      });
+      showToast("🧹 ALL Chats & DMs Reset!");
+    } catch (e) {
+      console.error("Reset all chats failed", e);
+    }
   };
 
   const formatTime = (ts) => {
@@ -666,8 +496,8 @@ export default function KittyChat() {
       const myNameKey = name.trim().toLowerCase();
       const targetKey = activeTarget.toLowerCase();
       return (
-        (m.senderName.toLowerCase() === myNameKey && m.recipientTarget.toLowerCase() === targetKey) ||
-        (m.senderName.toLowerCase() === targetKey && m.recipientTarget.toLowerCase() === myNameKey)
+        ((m.senderName || "").toLowerCase() === myNameKey && (m.recipientTarget || "").toLowerCase() === targetKey) ||
+        ((m.senderName || "").toLowerCase() === targetKey && (m.recipientTarget || "").toLowerCase() === myNameKey)
       );
     }
   });
@@ -677,8 +507,8 @@ export default function KittyChat() {
     const targetKey = targetName.toLowerCase();
     return messages.filter(
       (m) =>
-        m.senderName.toLowerCase() === targetKey &&
-        m.recipientTarget.toLowerCase() === myNameKey &&
+        (m.senderName || "").toLowerCase() === targetKey &&
+        (m.recipientTarget || "").toLowerCase() === myNameKey &&
         activeTarget.toLowerCase() !== targetKey
     ).length;
   };
@@ -688,11 +518,8 @@ export default function KittyChat() {
     const low = userNameStr.trim().toLowerCase();
     if (low === name.trim().toLowerCase()) return true;
 
-    if (onlinePings.has(low)) return true;
-
-    const shared = getSharedPresenceMap();
-    const lastSeen = shared[low];
-    if (lastSeen && Date.now() - lastSeen < 7000) {
+    const userObj = registeredUsers.find((u) => (u.name || "").trim().toLowerCase() === low);
+    if (userObj && userObj.lastActive && Date.now() - userObj.lastActive < 10000) {
       return true;
     }
     return false;
@@ -702,13 +529,13 @@ export default function KittyChat() {
   const offlineUsersList = registeredUsers.filter((u) => !isUserOnline(u.name));
 
   const otherRegisteredUsers = registeredUsers.filter(
-    (u) => u.name.toLowerCase() !== name.trim().toLowerCase()
+    (u) => (u.name || "").toLowerCase() !== name.trim().toLowerCase()
   );
 
   const activeTargetUserObj =
     activeTarget === "global"
       ? null
-      : registeredUsers.find((u) => u.name.toLowerCase() === activeTarget.toLowerCase());
+      : registeredUsers.find((u) => (u.name || "").toLowerCase() === activeTarget.toLowerCase());
 
   const styles = {
     page: {
@@ -1286,7 +1113,7 @@ export default function KittyChat() {
               </div>
               <div style={{ fontSize: 10, color: "#27AE60", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                 <span className="online-green-pulse" style={{ width: 6, height: 6 }} />
-                <span>{onlineUsersList.length} Active</span>
+                <span>{onlineUsersList.length} Active Cloud</span>
               </div>
             </div>
             <div
@@ -1620,10 +1447,10 @@ export default function KittyChat() {
               </div>
             ) : (
               filteredMessages.map((m) => {
-                const isMe = m.senderName.toLowerCase() === name.trim().toLowerCase();
+                const isMe = (m.senderName || "").toLowerCase() === name.trim().toLowerCase();
                 return (
                   <div
-                    key={m.id}
+                    key={m.firestoreId || m.timestamp + "_" + Math.random()}
                     className="msg-bubble-animated"
                     style={{
                       alignSelf: isMe ? "flex-end" : "flex-start",
