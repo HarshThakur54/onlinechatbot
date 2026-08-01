@@ -66,9 +66,10 @@ const PawDivider = () => (
   </div>
 );
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v4";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v4";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v4";
+const CHANNEL_NAME = "kitty_chat_broadcast_v5";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v5";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v5";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v5";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -88,11 +89,9 @@ const getAvatarColor = (str) => {
 };
 
 export default function KittyChat() {
-  const [screen, setScreen] = useState("auth"); // auth | onboard | chat
+  const [screen, setScreen] = useState("auth"); // auth | chat
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
-  const [checking, setChecking] = useState(false);
 
   // Registered Users Registry
   const [registeredUsers, setRegisteredUsers] = useState([]);
@@ -107,6 +106,15 @@ export default function KittyChat() {
 
   const scrollRef = useRef(null);
   const channelRef = useRef(null);
+
+  // Derive user display name from email (e.g. "alice@example.com" -> "alice")
+  const getDisplayName = (emailStr) => {
+    if (!emailStr) return "";
+    const parts = emailStr.split("@");
+    return parts[0] || emailStr;
+  };
+
+  const username = getDisplayName(email);
 
   // Helper to load registered users
   const loadRegisteredUsers = () => {
@@ -157,10 +165,24 @@ export default function KittyChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, activeTarget]);
 
-  // Initial load + Storage Event listener for cross-tab sync
+  // Initial load + Session Auto-Login on Refresh
   useEffect(() => {
     setRegisteredUsers(loadRegisteredUsers());
     setMessages(loadAllMessages());
+
+    // Auto-login if session exists
+    try {
+      const savedSession = localStorage.getItem(ACTIVE_SESSION_KEY);
+      if (savedSession) {
+        const sessionData = JSON.parse(savedSession);
+        if (sessionData?.email) {
+          setEmail(sessionData.email);
+          setScreen("chat");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to restore session", e);
+    }
 
     const handleStorageChange = (e) => {
       if (e.key === GLOBAL_MSGS_KEY) {
@@ -207,10 +229,10 @@ export default function KittyChat() {
 
     // Presence Heartbeat
     const interval = setInterval(() => {
-      if (email && username) {
+      if (email) {
         channel.postMessage({
           type: "PRESENCE_PING",
-          payload: { email: email.toLowerCase(), username },
+          payload: { email: email.toLowerCase(), username: getDisplayName(email) },
         });
       }
       // Prune inactive pings (> 6 sec)
@@ -230,63 +252,39 @@ export default function KittyChat() {
       clearInterval(interval);
       channel.close();
     };
-  }, [email, username]);
+  }, [email]);
 
   const validEmail = (v) => Boolean(v && v.trim().length > 0);
 
-  const handleContinue = async () => {
+  // Single-Step Login with Email Only
+  const handleLogin = () => {
     setError("");
-    if (!validEmail(email)) {
-      setError("Please enter an email or name to continue.");
+    const trimmed = email.trim();
+    if (!validEmail(trimmed)) {
+      setError("Please enter your email to continue.");
       return;
     }
-    setChecking(true);
-    const lowEmail = email.toLowerCase();
-    try {
-      const users = loadRegisteredUsers();
-      const found = users.find((u) => u.email === lowEmail);
-      if (found) {
-        setUsername(found.username);
-        setMessages(loadAllMessages());
-        setScreen("chat");
-      } else {
-        setScreen("onboard");
-      }
-    } catch {
-      setScreen("onboard");
-    } finally {
-      setChecking(false);
-    }
-  };
+    const lowEmail = trimmed.toLowerCase();
+    const displayName = getDisplayName(lowEmail);
 
-  const handleCreateAccount = async () => {
-    setError("");
-    if (!username.trim()) {
-      setError("Pick a username, cutie.");
-      return;
-    }
-    setChecking(true);
-    const lowEmail = email.toLowerCase();
     const newUser = {
       email: lowEmail,
-      username: username.trim(),
+      username: displayName,
       registeredAt: Date.now(),
     };
-    try {
-      registerUserInStore(newUser);
-      setMessages(loadAllMessages());
-      setScreen("chat");
-    } catch {
-      setError("Couldn't create your account, try again.");
-    } finally {
-      setChecking(false);
-    }
+
+    registerUserInStore(newUser);
+    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ email: lowEmail }));
+
+    setEmail(lowEmail);
+    setMessages(loadAllMessages());
+    setScreen("chat");
   };
 
   const handleLogout = () => {
+    localStorage.removeItem(ACTIVE_SESSION_KEY);
     setScreen("auth");
     setEmail("");
-    setUsername("");
     setInput("");
     setError("");
   };
@@ -441,7 +439,7 @@ export default function KittyChat() {
     },
   };
 
-  // AUTH / ONBOARD SCREENS
+  // AUTH SCREEN (Single step - Email only)
   if (screen !== "chat") {
     return (
       <div style={styles.page}>
@@ -502,57 +500,22 @@ export default function KittyChat() {
 
         <div style={styles.card}>
           <div style={{ display: "flex", justifyContent: "center" }}>{HELLO_KITTY_AVATAR(68)}</div>
-          <div style={styles.title}>{screen === "auth" ? "Pyaru Pyaru Baatee 🎀" : "Almost there!"}</div>
-          <div style={styles.subtitle}>
-            {screen === "auth"
-              ? "Enter your name or email to join the chat"
-              : "Pick your username to finish registration"}
-          </div>
+          <div style={styles.title}>Pyaru Pyaru Baatee 🎀</div>
+          <div style={styles.subtitle}>Enter your email to enter the chat room</div>
 
-          {screen === "auth" && (
-            <>
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Your email or name..."
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleContinue()}
-              />
-              {error && <div style={styles.error}>{error}</div>}
-              <button style={styles.button} onClick={handleContinue} disabled={checking}>
-                {checking ? "Checking..." : "Continue ✨"}
-              </button>
-            </>
-          )}
-
-          {screen === "onboard" && (
-            <>
-              <div
-                style={{
-                  ...styles.input,
-                  background: "#FBEEF3",
-                  color: "#B48A9C",
-                  marginBottom: 12,
-                }}
-              >
-                {email}
-              </div>
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleCreateAccount()}
-                autoFocus
-              />
-              {error && <div style={styles.error}>{error}</div>}
-              <button style={styles.button} onClick={handleCreateAccount} disabled={checking}>
-                {checking ? "Registering..." : "Join Chat 🎀"}
-              </button>
-            </>
-          )}
+          <input
+            style={styles.input}
+            type="text"
+            placeholder="Enter your email..."
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            autoFocus
+          />
+          {error && <div style={styles.error}>{error}</div>}
+          <button style={styles.button} onClick={handleLogin}>
+            Enter Chat 🎀
+          </button>
           <PawDivider />
         </div>
       </div>
@@ -663,7 +626,7 @@ export default function KittyChat() {
                   : `💬 Chat with ${activeTargetUserObj?.username || activeTarget}`}
               </div>
               <div style={{ fontSize: 12, color: "#C79AB0", display: "flex", alignItems: "center", gap: 6 }}>
-                <span>hi, <strong>{username}</strong> ✨</span>
+                <span>hi, <strong>{email}</strong> ✨</span>
               </div>
             </div>
           </div>
@@ -930,7 +893,7 @@ export default function KittyChat() {
             textAlign: "center",
           }}
         >
-          💡 Open a <strong>2nd browser tab/window</strong> with a different name to test talking between 2 users!
+          💡 Open a <strong>2nd browser tab/window</strong> with a 2nd email to test multi-user chat!
         </div>
 
         {/* Chat Messages Feed */}
