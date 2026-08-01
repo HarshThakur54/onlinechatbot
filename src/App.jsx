@@ -108,12 +108,12 @@ const RUNNING_HELLO_KITTY = () => (
     className="running-kitty-sprite"
     style={{
       position: "fixed",
-      bottom: "10px",
+      bottom: "6px",
       zIndex: 3,
       pointerEvents: "none",
     }}
   >
-    <svg width="42" height="42" viewBox="0 0 100 100" fill="none">
+    <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
       {/* Ears */}
       <path d="M 22 36 L 12 15 L 36 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 78 36 L 88 15 L 64 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
@@ -148,12 +148,12 @@ const RUNNING_CAT = () => (
     className="running-cat-sprite"
     style={{
       position: "fixed",
-      bottom: "24px",
+      bottom: "18px",
       zIndex: 3,
       pointerEvents: "none",
     }}
   >
-    <svg width="38" height="38" viewBox="0 0 100 100" fill="none">
+    <svg width="34" height="34" viewBox="0 0 100 100" fill="none">
       {/* Tail */}
       <path d="M 15 65 Q 5 40 12 25" stroke="#FF8FAB" strokeWidth="6" strokeLinecap="round" fill="none" />
       {/* Body */}
@@ -635,31 +635,33 @@ export default function KittyChat() {
 
   const styles = {
     page: {
-      minHeight: "100vh",
-      width: "100%",
+      minHeight: "100dvh",
+      height: "100dvh",
+      width: "100vw",
       background: "linear-gradient(180deg, #FFF0F5 0%, #FCE4EC 50%, #FDEDF3 100%)",
       fontFamily: "'Quicksand', sans-serif",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: "0 12px",
+      padding: "0",
       boxSizing: "border-box",
       position: "relative",
       overflow: "hidden",
+      WebkitTapHighlightColor: "transparent",
     },
     card: {
-      width: "100%",
-      maxWidth: 420,
+      width: "90%",
+      maxWidth: 400,
       background: "#FFFFFF",
-      borderRadius: 28,
+      borderRadius: 24,
       boxShadow: "0 20px 50px -12px rgba(232,92,138,0.25)",
-      padding: "36px 32px",
+      padding: "32px 24px",
       boxSizing: "border-box",
       zIndex: 2,
     },
     title: {
       fontFamily: "'Fredoka', sans-serif",
-      fontSize: 28,
+      fontSize: 26,
       color: "#4A3B47",
       textAlign: "center",
       margin: "10px 0 4px",
@@ -668,15 +670,15 @@ export default function KittyChat() {
     subtitle: {
       textAlign: "center",
       color: "#B48A9C",
-      fontSize: 14,
-      marginBottom: 20,
+      fontSize: 13.5,
+      marginBottom: 18,
     },
     input: {
       width: "100%",
       padding: "14px 16px",
       borderRadius: 16,
       border: "2px solid #F6D9E4",
-      fontSize: 15,
+      fontSize: 16, // 16px prevents iOS Safari from auto-zooming on focus
       fontFamily: "'Quicksand', sans-serif",
       outline: "none",
       boxSizing: "border-box",
@@ -710,9 +712,16 @@ export default function KittyChat() {
     <div style={styles.page}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600&display=swap');
+        
+        * {
+          box-sizing: border-box;
+          -webkit-tap-highlight-color: transparent;
+        }
+
         input:focus { border-color: #E85C8A !important; }
-        button:active { transform: scale(0.98); }
-        ::-webkit-scrollbar { width: 6px; }
+        button:active { transform: scale(0.96); }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-thumb { background: #F0C4D6; border-radius: 10px; }
         .user-item:hover { background: #FFF0F5 !important; }
 
@@ -829,9 +838,33 @@ export default function KittyChat() {
           animation: catRunLoop 24s linear infinite;
         }
 
-        @media (max-width: 992px) {
+        /* Mobile Responsive Optimizations */
+        @media (max-width: 600px) {
           .desktop-side-decoration {
             display: none !important;
+          }
+          .chat-main-container {
+            width: 100vw !important;
+            max-width: 100vw !important;
+            height: 100dvh !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          .mobile-header-title {
+            font-size: 14px !important;
+          }
+          .mobile-header-subtitle {
+            font-size: 11px !important;
+          }
+          .mobile-btn-text {
+            display: none;
+          }
+          .mobile-btn-compact {
+            padding: 6px 10px !important;
+            font-size: 11.5px !important;
+          }
+          .chat-input-element {
+            font-size: 16px !important; /* Prevents auto zoom on mobile iOS Safari */
           }
         }
       `}</style>
@@ -937,23 +970,23 @@ export default function KittyChat() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.82)",
+            background: "rgba(0,0,0,0.85)",
             zIndex: 9999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 20,
+            padding: 16,
             cursor: "zoom-out",
           }}
         >
-          <div style={{ position: "relative", maxWidth: "90%", maxHeight: "90%" }}>
+          <div style={{ position: "relative", maxWidth: "94%", maxHeight: "90%" }}>
             <img
               src={previewImageModal}
               alt="Preview"
               style={{
                 maxWidth: "100%",
                 maxHeight: "85vh",
-                borderRadius: 20,
+                borderRadius: 18,
                 boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
               }}
             />
@@ -988,6 +1021,7 @@ export default function KittyChat() {
           <div style={styles.subtitle}>Enter your name to enter the chat room</div>
 
           <input
+            className="chat-input-element"
             style={styles.input}
             type="text"
             placeholder="Enter your name..."
@@ -1005,13 +1039,14 @@ export default function KittyChat() {
       ) : (
         /* MAIN CHAT CONTAINER */
         <div
+          className="chat-main-container"
           style={{
             maxWidth: 520,
             width: "100%",
             margin: "0 auto",
             display: "flex",
             flexDirection: "column",
-            height: "100vh",
+            height: "100dvh",
             background: "#FFFFFF",
             boxShadow: "0 0 40px rgba(232, 92, 138, 0.15)",
             position: "relative",
@@ -1031,7 +1066,7 @@ export default function KittyChat() {
                 color: "#FFFFFF",
                 padding: "8px 18px",
                 borderRadius: 20,
-                fontSize: 13,
+                fontSize: 12.5,
                 fontFamily: "'Fredoka', sans-serif",
                 fontWeight: 600,
                 boxShadow: "0 6px 18px rgba(232,92,138,0.4)",
@@ -1039,6 +1074,7 @@ export default function KittyChat() {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
+                whiteSpace: "nowrap",
               }}
             >
               {toastMessage}
@@ -1051,56 +1087,72 @@ export default function KittyChat() {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              padding: "14px 18px",
+              padding: "12px 14px",
               background: "#FFFFFF",
               borderBottom: "2px solid #FBEBF1",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {HELLO_KITTY_AVATAR(36)}
-              <div>
-                <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 16, color: "#4A3B47", fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              {HELLO_KITTY_AVATAR(32)}
+              <div style={{ minWidth: 0 }}>
+                <div
+                  className="mobile-header-title"
+                  style={{
+                    fontFamily: "'Fredoka', sans-serif",
+                    fontSize: 15,
+                    color: "#4A3B47",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {activeTarget === "global"
                     ? "Pyaru Pyaru Baatee 🎀"
-                    : `💬 Chat with ${activeTargetUserObj?.name || activeTarget}`}
+                    : `💬 ${activeTargetUserObj?.name || activeTarget}`}
                 </div>
-                <div style={{ fontSize: 12, color: "#C79AB0", display: "flex", alignItems: "center", gap: 6 }}>
+                <div
+                  className="mobile-header-subtitle"
+                  style={{ fontSize: 11.5, color: "#C79AB0", display: "flex", alignItems: "center", gap: 4 }}
+                >
                   <span>hi, <strong>{name}</strong> ✨</span>
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
               {/* TARGETED RESET CHAT BUTTON */}
               <button
                 onClick={resetActiveChat}
+                className="mobile-btn-compact"
                 title={activeTarget === "global" ? "Reset Group Chat" : `Reset Personal Chat with ${activeTargetUserObj?.name || activeTarget}`}
                 style={{
                   border: "none",
                   background: "#FFE6EE",
                   color: "#D9436A",
                   borderRadius: 12,
-                  padding: "8px 12px",
-                  fontSize: 12,
+                  padding: "7px 10px",
+                  fontSize: 11.5,
                   fontFamily: "'Fredoka', sans-serif",
                   fontWeight: 600,
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
-                  boxShadow: "0 2px 6px rgba(217,67,106,0.15)",
+                  gap: 3,
+                  boxShadow: "0 2px 6px rgba(217,67,106,0.12)",
                 }}
               >
-                🔄 {activeTarget === "global" ? "Clear Group Chat" : `Clear Chat (${activeTargetUserObj?.name || activeTarget})`}
+                <span>🔄 Clear</span>
               </button>
               <button
                 onClick={() => setShowUsersPanel(!showUsersPanel)}
+                className="mobile-btn-compact"
                 style={{
                   border: "none",
                   background: showUsersPanel ? "#E85C8A" : "#FBEEF3",
                   color: showUsersPanel ? "#FFFFFF" : "#B4577A",
                   borderRadius: 12,
-                  padding: "8px 10px",
-                  fontSize: 12,
+                  padding: "7px 9px",
+                  fontSize: 11.5,
                   fontFamily: "'Quicksand', sans-serif",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -1110,19 +1162,20 @@ export default function KittyChat() {
               </button>
               <button
                 onClick={handleLogout}
+                className="mobile-btn-compact"
                 style={{
                   border: "none",
                   background: "#FFF0F4",
                   color: "#B4577A",
                   borderRadius: 12,
-                  padding: "8px 10px",
-                  fontSize: 12,
+                  padding: "7px 9px",
+                  fontSize: 11.5,
                   fontFamily: "'Quicksand', sans-serif",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
-                Log out
+                Logout
               </button>
             </div>
           </div>
@@ -1132,18 +1185,19 @@ export default function KittyChat() {
             style={{
               background: "#FFF8FA",
               borderBottom: "2px solid #FBEBF1",
-              padding: "10px 14px",
+              padding: "8px 12px",
             }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B4577A", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
-              {BOW(16)} SELECT ROOM OR FRIEND:
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#B4577A", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
+              {BOW(14)} SELECT ROOM OR FRIEND:
             </div>
             <div
               style={{
                 display: "flex",
-                gap: 8,
+                gap: 6,
                 overflowX: "auto",
-                paddingBottom: 4,
+                paddingBottom: 2,
+                WebkitOverflowScrolling: "touch",
               }}
             >
               {/* Global Room Button */}
@@ -1153,21 +1207,21 @@ export default function KittyChat() {
                   border: activeTarget === "global" ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
                   background: activeTarget === "global" ? "#FFE6EE" : "#FFFFFF",
                   color: "#4A3B47",
-                  borderRadius: 16,
-                  padding: "6px 12px",
-                  fontSize: 12.5,
+                  borderRadius: 14,
+                  padding: "5px 10px",
+                  fontSize: 12,
                   fontFamily: "'Quicksand', sans-serif",
                   fontWeight: activeTarget === "global" ? 700 : 500,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
+                  gap: 5,
                   boxShadow: activeTarget === "global" ? "0 3px 10px rgba(232,92,138,0.2)" : "none",
                 }}
               >
                 <span>🎀 Everyone</span>
-                <span style={{ fontSize: 10, background: "#E85C8A", color: "#fff", padding: "1px 6px", borderRadius: 10 }}>
+                <span style={{ fontSize: 9.5, background: "#E85C8A", color: "#fff", padding: "1px 5px", borderRadius: 8 }}>
                   Group
                 </span>
               </button>
@@ -1185,23 +1239,23 @@ export default function KittyChat() {
                       border: isSelected ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
                       background: isSelected ? "#FFE6EE" : "#FFFFFF",
                       color: "#4A3B47",
-                      borderRadius: 16,
-                      padding: "6px 12px",
-                      fontSize: 12.5,
+                      borderRadius: 14,
+                      padding: "5px 10px",
+                      fontSize: 12,
                       fontFamily: "'Quicksand', sans-serif",
                       fontWeight: isSelected ? 700 : 500,
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                       display: "flex",
                       alignItems: "center",
-                      gap: 6,
+                      gap: 5,
                       boxShadow: isSelected ? "0 3px 10px rgba(232,92,138,0.2)" : "none",
                     }}
                   >
                     <span
                       style={{
-                        width: 8,
-                        height: 8,
+                        width: 7,
+                        height: 7,
                         borderRadius: "50%",
                         background: online ? "#2ECC71" : "#BDC3C7",
                       }}
@@ -1212,11 +1266,11 @@ export default function KittyChat() {
                         style={{
                           background: "#D9436A",
                           color: "#fff",
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: 700,
                           borderRadius: "50%",
-                          width: 16,
-                          height: 16,
+                          width: 15,
+                          height: 15,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1237,25 +1291,25 @@ export default function KittyChat() {
               style={{
                 background: "#FFFBFD",
                 borderBottom: "2px solid #FBEBF1",
-                padding: 14,
-                maxHeight: 250,
+                padding: 12,
+                maxHeight: 220,
                 overflowY: "auto",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#4A3B47" }}>
                   Registered Users ({registeredUsers.length})
                 </span>
-                <div style={{ display: "flex", gap: 6 }}>
+                <div style={{ display: "flex", gap: 5 }}>
                   <button
                     onClick={resetActiveChat}
                     style={{
                       border: "none",
                       background: "#FFE6EE",
                       color: "#D9436A",
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: 700,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       padding: "4px 8px",
                       cursor: "pointer",
                     }}
@@ -1268,9 +1322,9 @@ export default function KittyChat() {
                       border: "none",
                       background: "#FFF0F4",
                       color: "#B4577A",
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: 700,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       padding: "4px 8px",
                       cursor: "pointer",
                     }}
@@ -1306,13 +1360,13 @@ export default function KittyChat() {
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div
                           style={{
-                            width: 28,
-                            height: 28,
+                            width: 26,
+                            height: 26,
                             borderRadius: "50%",
                             background: avatarBg,
                             color: "#fff",
                             fontWeight: 700,
-                            fontSize: 13,
+                            fontSize: 12,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1321,13 +1375,13 @@ export default function KittyChat() {
                           {u.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#4A3B47" }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: "#4A3B47" }}>
                             {u.name} {isMe && "(You)"}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: online ? "#27AE60" : "#95A5A6" }}>
-                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: online ? "#27AE60" : "#BDC3C7" }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 600, color: online ? "#27AE60" : "#95A5A6" }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: online ? "#27AE60" : "#BDC3C7" }} />
                         {online ? "Online" : "Offline"}
                       </div>
                     </div>
@@ -1344,12 +1398,12 @@ export default function KittyChat() {
             style={{
               background: "#FFF5F8",
               borderBottom: "1px dashed #F6CEFC",
-              padding: "7px 14px",
-              fontSize: 11.5,
+              padding: "6px 12px",
+              fontSize: 11,
               fontWeight: 600,
               color: "#B4577A",
               textAlign: "center",
-              letterSpacing: "0.2px",
+              letterSpacing: "0.1px",
             }}
           >
             {LOVELY_MESSAGES[lovelyQuoteIndex]}
@@ -1361,11 +1415,12 @@ export default function KittyChat() {
             style={{
               flex: 1,
               overflowY: "auto",
-              padding: "18px 16px",
+              padding: "14px 12px",
               display: "flex",
               flexDirection: "column",
-              gap: 14,
+              gap: 12,
               background: "#FAF4F7",
+              WebkitOverflowScrolling: "touch",
             }}
           >
             {filteredMessages.length === 0 ? (
@@ -1373,17 +1428,17 @@ export default function KittyChat() {
                 style={{
                   textAlign: "center",
                   color: "#C79AB0",
-                  marginTop: 40,
-                  fontSize: 14,
+                  marginTop: 36,
+                  fontSize: 13.5,
                 }}
               >
-                {HELLO_KITTY_AVATAR(50)}
-                <div style={{ marginTop: 12, fontFamily: "'Fredoka', sans-serif", fontSize: 16 }}>
+                {HELLO_KITTY_AVATAR(46)}
+                <div style={{ marginTop: 10, fontFamily: "'Fredoka', sans-serif", fontSize: 15 }}>
                   {activeTarget === "global"
                     ? "Welcome to Pyaru Pyaru Baatee! 🎀"
                     : `No messages with ${activeTargetUserObj?.name || activeTarget} yet!`}
                 </div>
-                <div style={{ fontSize: 12.5, marginTop: 4 }}>
+                <div style={{ fontSize: 12, marginTop: 4 }}>
                   Type a message or send an image below! 📷✨🐾
                 </div>
               </div>
@@ -1396,7 +1451,7 @@ export default function KittyChat() {
                     className="msg-bubble-animated"
                     style={{
                       alignSelf: isMe ? "flex-end" : "flex-start",
-                      maxWidth: "82%",
+                      maxWidth: "85%",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: isMe ? "flex-end" : "flex-start",
@@ -1405,17 +1460,17 @@ export default function KittyChat() {
                     {!isMe && (
                       <div
                         style={{
-                          fontSize: 11,
+                          fontSize: 10.5,
                           fontWeight: 600,
                           color: "#B4577A",
-                          marginBottom: 3,
+                          marginBottom: 2,
                           paddingLeft: 4,
                           display: "flex",
                           alignItems: "center",
                           gap: 4,
                         }}
                       >
-                        {BOW(14)} {m.senderName}
+                        {BOW(13)} {m.senderName}
                       </div>
                     )}
                     <div
@@ -1424,31 +1479,31 @@ export default function KittyChat() {
                           ? "linear-gradient(135deg, #FF8FAB, #E85C8A)"
                           : "#FFFFFF",
                         color: isMe ? "#FFFFFF" : "#4A3B47",
-                        padding: "12px 16px",
+                        padding: "10px 14px",
                         borderRadius: isMe
-                          ? "18px 18px 4px 18px"
-                          : "18px 18px 18px 4px",
-                        fontSize: 14.5,
-                        lineHeight: 1.5,
-                        boxShadow: "0 4px 14px -6px rgba(232,92,138,0.2)",
+                          ? "16px 16px 4px 16px"
+                          : "16px 16px 16px 4px",
+                        fontSize: 14,
+                        lineHeight: 1.45,
+                        boxShadow: "0 3px 12px -5px rgba(232,92,138,0.2)",
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word",
                       }}
                     >
                       {/* Image Attachment Rendering */}
                       {m.image && (
-                        <div style={{ marginBottom: m.content ? 8 : 0 }}>
+                        <div style={{ marginBottom: m.content ? 6 : 0 }}>
                           <img
                             src={m.image}
                             alt="Attachment"
                             onClick={() => setPreviewImageModal(m.image)}
                             style={{
                               maxWidth: "100%",
-                              maxHeight: 240,
-                              borderRadius: 14,
+                              maxHeight: 220,
+                              borderRadius: 12,
                               display: "block",
                               cursor: "zoom-in",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                              boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
                             }}
                           />
                         </div>
@@ -1457,9 +1512,9 @@ export default function KittyChat() {
                     </div>
                     <div
                       style={{
-                        fontSize: 10,
+                        fontSize: 9.5,
                         color: "#C79AB0",
-                        marginTop: 3,
+                        marginTop: 2,
                         padding: isMe ? "0 4px 0 0" : "0 0 0 4px",
                       }}
                     >
@@ -1475,7 +1530,7 @@ export default function KittyChat() {
           {selectedImage && (
             <div
               style={{
-                padding: "8px 16px",
+                padding: "8px 12px",
                 background: "#FFE6EE",
                 borderTop: "2px solid #FBEBF1",
                 display: "flex",
@@ -1483,14 +1538,14 @@ export default function KittyChat() {
                 justifyContent: "space-between",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <img
                   src={selectedImage}
                   alt="Selected"
-                  style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: "2px solid #E85C8A" }}
+                  style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "2px solid #E85C8A" }}
                 />
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#4A3B47" }}>
-                  📷 Image attached & ready to send
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: "#4A3B47" }}>
+                  📷 Image ready to send
                 </span>
               </div>
               <button
@@ -1500,9 +1555,9 @@ export default function KittyChat() {
                   background: "#D9436A",
                   color: "#fff",
                   borderRadius: "50%",
-                  width: 24,
-                  height: 24,
-                  fontSize: 12,
+                  width: 22,
+                  height: 22,
+                  fontSize: 11,
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -1513,8 +1568,14 @@ export default function KittyChat() {
           )}
 
           {/* Input Bar */}
-          <div style={{ padding: 14, background: "#FFFFFF", borderTop: "2px solid #FBEBF1" }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div
+            style={{
+              padding: "10px 12px calc(10px + env(safe-area-inset-bottom, 4px)) 12px",
+              background: "#FFFFFF",
+              borderTop: "2px solid #FBEBF1",
+            }}
+          >
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               {/* Hidden File Input for Image Upload */}
               <input
                 type="file"
@@ -1529,12 +1590,12 @@ export default function KittyChat() {
                 onClick={() => fileInputRef.current?.click()}
                 title="Send an Image"
                 style={{
-                  width: 44,
-                  height: 44,
+                  width: 42,
+                  height: 42,
                   borderRadius: "50%",
                   border: "2px solid #F6D9E4",
                   background: "#FFF0F5",
-                  fontSize: 18,
+                  fontSize: 17,
                   cursor: "pointer",
                   flexShrink: 0,
                   display: "flex",
@@ -1546,13 +1607,14 @@ export default function KittyChat() {
               </button>
 
               <input
+                className="chat-input-element"
                 style={{
                   flex: 1,
-                  padding: "13px 16px",
+                  padding: "11px 14px",
                   borderRadius: 20,
                   border: "2px solid #F6D9E4",
                   outline: "none",
-                  fontSize: 14.5,
+                  fontSize: 16, // 16px font prevents iOS Safari from zooming in
                   fontFamily: "'Quicksand', sans-serif",
                   color: "#4A3B47",
                   background: "#FFFBFD",
@@ -1570,16 +1632,19 @@ export default function KittyChat() {
               <button
                 onClick={send}
                 style={{
-                  width: 46,
-                  height: 46,
+                  width: 44,
+                  height: 44,
                   borderRadius: "50%",
                   border: "none",
                   background: "linear-gradient(135deg, #FF8FAB, #E85C8A)",
                   color: "#fff",
-                  fontSize: 18,
+                  fontSize: 17,
                   cursor: "pointer",
                   flexShrink: 0,
                   boxShadow: "0 4px 12px rgba(232, 92, 138, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 ➤
