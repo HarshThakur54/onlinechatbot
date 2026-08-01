@@ -194,10 +194,11 @@ const LOVELY_MESSAGES = [
   "✨ Life is sweeter when we share lovely moments together! 🎀",
 ];
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v10";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v10";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v10";
-const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v10";
+const CHANNEL_NAME = "kitty_chat_broadcast_v11";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v11";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v11";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v11";
+const PRESENCE_MAP_KEY = "kitty_chat_presence_map_v11";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -248,11 +249,29 @@ export default function KittyChat() {
     return () => clearInterval(quoteInterval);
   }, []);
 
-  const username = name.trim();
-
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3000);
+  };
+
+  // Shared presence helper via localStorage
+  const updateSharedPresence = (userNameStr) => {
+    if (!userNameStr) return;
+    try {
+      const raw = localStorage.getItem(PRESENCE_MAP_KEY);
+      const map = raw ? JSON.parse(raw) : {};
+      map[userNameStr.trim().toLowerCase()] = Date.now();
+      localStorage.setItem(PRESENCE_MAP_KEY, JSON.stringify(map));
+    } catch (e) {}
+  };
+
+  const getSharedPresenceMap = () => {
+    try {
+      const raw = localStorage.getItem(PRESENCE_MAP_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
   };
 
   // Load registered users from storage
@@ -295,6 +314,7 @@ export default function KittyChat() {
   const saveAllMessages = (newMsgs) => {
     try {
       localStorage.setItem(GLOBAL_MSGS_KEY, JSON.stringify(newMsgs));
+      window.dispatchEvent(new Event("kitty-chat-msgs-sync"));
     } catch (e) {
       console.error("Failed to save messages", e);
     }
@@ -364,17 +384,52 @@ export default function KittyChat() {
       console.error("Failed to restore session", e);
     }
 
-    const handleStorageChange = (e) => {
-      if (e.key === GLOBAL_MSGS_KEY) {
-        setMessages(loadAllMessages());
-      } else if (e.key === REGISTERED_USERS_KEY) {
-        setRegisteredUsers(loadRegisteredUsers());
-      }
+    const syncMessagesAndUsers = () => {
+      const latestMsgs = loadAllMessages();
+      setMessages(latestMsgs);
+
+      const latestUsers = loadRegisteredUsers();
+      setRegisteredUsers(latestUsers);
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("storage", syncMessagesAndUsers);
+    window.addEventListener("kitty-chat-msgs-sync", syncMessagesAndUsers);
+
+    return () => {
+      window.removeEventListener("storage", syncMessagesAndUsers);
+      window.removeEventListener("kitty-chat-msgs-sync", syncMessagesAndUsers);
+    };
   }, []);
+
+  // REAL-TIME SYNC HEARTBEAT (Sub-second polling for instant message & user presence update)
+  useEffect(() => {
+    if (!name) return;
+
+    const syncInterval = setInterval(() => {
+      // 1. Check for new messages in localStorage
+      const currentStoredMsgs = loadAllMessages();
+      setMessages((prev) => {
+        if (prev.length !== currentStoredMsgs.length || (prev.length > 0 && currentStoredMsgs.length > 0 && prev[prev.length - 1].id !== currentStoredMsgs[currentStoredMsgs.length - 1].id)) {
+          return currentStoredMsgs;
+        }
+        return prev;
+      });
+
+      // 2. Check for new registered users
+      const currentStoredUsers = loadRegisteredUsers();
+      setRegisteredUsers((prev) => {
+        if (prev.length !== currentStoredUsers.length) {
+          return currentStoredUsers;
+        }
+        return prev;
+      });
+
+      // 3. Heartbeat update own presence
+      updateSharedPresence(name);
+    }, 600);
+
+    return () => clearInterval(syncInterval);
+  }, [name]);
 
   // BroadcastChannel Instant Bidirectional Handshake Presence & Messaging
   useEffect(() => {
@@ -388,6 +443,8 @@ export default function KittyChat() {
           type: "PRESENCE_PING",
           payload: { name: name.trim(), timestamp: now },
         });
+
+        updateSharedPresence(name);
 
         setOnlinePings((prev) => {
           const next = new Map(prev);
@@ -510,6 +567,7 @@ export default function KittyChat() {
 
     registerUserInStore(newUser);
     localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ name: trimmed }));
+    updateSharedPresence(trimmed);
 
     setName(trimmed);
     setMessages(loadAllMessages());
@@ -629,7 +687,15 @@ export default function KittyChat() {
     if (!userNameStr) return false;
     const low = userNameStr.trim().toLowerCase();
     if (low === name.trim().toLowerCase()) return true;
-    return onlinePings.has(low);
+
+    if (onlinePings.has(low)) return true;
+
+    const shared = getSharedPresenceMap();
+    const lastSeen = shared[low];
+    if (lastSeen && Date.now() - lastSeen < 7000) {
+      return true;
+    }
+    return false;
   };
 
   const onlineUsersList = registeredUsers.filter((u) => isUserOnline(u.name));
@@ -907,7 +973,7 @@ export default function KittyChat() {
             font-size: 10.5px !important;
           }
           .chat-input-element {
-            font-size: 16px !important; /* Prevents auto zoom on mobile iOS Safari */
+            font-size: 16px !important;
           }
         }
       `}</style>
@@ -1724,7 +1790,7 @@ export default function KittyChat() {
                   borderRadius: 20,
                   border: "2px solid #F6D9E4",
                   outline: "none",
-                  fontSize: 16, // 16px font prevents iOS Safari from zooming in
+                  fontSize: 16,
                   fontFamily: "'Quicksand', sans-serif",
                   color: "#4A3B47",
                   background: "#FFFBFD",
