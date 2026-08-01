@@ -181,12 +181,12 @@ export default function KittyChat() {
     };
   }, [email, username]);
 
-  const validEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const validEmail = (v) => Boolean(v && v.trim().length > 0);
 
   const handleContinue = async () => {
     setError("");
     if (!validEmail(email)) {
-      setError("That doesn't look like a real email.");
+      setError("Please enter an email or name to continue.");
       return;
     }
     setChecking(true);
