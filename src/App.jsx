@@ -194,10 +194,10 @@ const LOVELY_MESSAGES = [
   "✨ Life is sweeter when we share lovely moments together! 🎀",
 ];
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v9";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v9";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v9";
-const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v9";
+const CHANNEL_NAME = "kitty_chat_broadcast_v10";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v10";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v10";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v10";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -272,9 +272,9 @@ export default function KittyChat() {
     let updated;
     if (existingIdx >= 0) {
       updated = [...list];
-      updated[existingIdx] = { ...updated[existingIdx], ...userObj };
+      updated[existingIdx] = { ...updated[existingIdx], ...userObj, lastActive: Date.now() };
     } else {
-      updated = [...list, userObj];
+      updated = [...list, { ...userObj, lastActive: Date.now() }];
     }
     localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
     setRegisteredUsers(updated);
@@ -383,9 +383,17 @@ export default function KittyChat() {
 
     const sendMyPing = () => {
       if (name) {
+        const now = Date.now();
         channel.postMessage({
           type: "PRESENCE_PING",
-          payload: { name: name.trim() },
+          payload: { name: name.trim(), timestamp: now },
+        });
+
+        // Also update local registered users map with timestamp
+        setOnlinePings((prev) => {
+          const next = new Map(prev);
+          next.set(name.trim().toLowerCase(), now);
+          return next;
         });
       }
     };
@@ -403,10 +411,11 @@ export default function KittyChat() {
         if (payload?.name) {
           const incomingName = payload.name.trim();
           const incomingKey = incomingName.toLowerCase();
+          const incomingTs = payload.timestamp || Date.now();
 
           setOnlinePings((prev) => {
             const next = new Map(prev);
-            next.set(incomingKey, Date.now());
+            next.set(incomingKey, incomingTs);
             return next;
           });
 
@@ -414,7 +423,7 @@ export default function KittyChat() {
             if (!prev.some((u) => u.name.toLowerCase() === incomingKey)) {
               const updated = [
                 ...prev,
-                { name: incomingName, registeredAt: Date.now() },
+                { name: incomingName, registeredAt: Date.now(), lastActive: incomingTs },
               ];
               localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
               return updated;
@@ -459,10 +468,7 @@ export default function KittyChat() {
     };
 
     if (name) {
-      channel.postMessage({
-        type: "PRESENCE_PING",
-        payload: { name: name.trim(), isInitial: true },
-      });
+      sendMyPing();
       const currentList = loadRegisteredUsers();
       channel.postMessage({ type: "USERS_UPDATED", payload: currentList });
     }
@@ -500,6 +506,7 @@ export default function KittyChat() {
     const newUser = {
       name: trimmed,
       registeredAt: Date.now(),
+      lastActive: Date.now(),
     };
 
     registerUserInStore(newUser);
@@ -511,7 +518,7 @@ export default function KittyChat() {
 
     channelRef.current?.postMessage({
       type: "PRESENCE_PING",
-      payload: { name: trimmed, isInitial: true },
+      payload: { name: trimmed, isInitial: true, timestamp: Date.now() },
     });
   };
 
@@ -620,9 +627,14 @@ export default function KittyChat() {
   };
 
   const isUserOnline = (userNameStr) => {
-    if (userNameStr.toLowerCase() === name.trim().toLowerCase()) return true;
-    return onlinePings.has(userNameStr.toLowerCase());
+    if (!userNameStr) return false;
+    const low = userNameStr.trim().toLowerCase();
+    if (low === name.trim().toLowerCase()) return true;
+    return onlinePings.has(low);
   };
+
+  const onlineUsersList = registeredUsers.filter((u) => isUserOnline(u.name));
+  const offlineUsersList = registeredUsers.filter((u) => !isUserOnline(u.name));
 
   const otherRegisteredUsers = registeredUsers.filter(
     (u) => u.name.toLowerCase() !== name.trim().toLowerCase()
@@ -678,7 +690,7 @@ export default function KittyChat() {
       padding: "14px 16px",
       borderRadius: 16,
       border: "2px solid #F6D9E4",
-      fontSize: 16, // 16px prevents iOS Safari from auto-zooming on focus
+      fontSize: 16,
       fontFamily: "'Quicksand', sans-serif",
       outline: "none",
       boxSizing: "border-box",
@@ -776,6 +788,21 @@ export default function KittyChat() {
           50% { opacity: 1; transform: scale(1.2); }
         }
 
+        .online-green-pulse {
+          display: inline-block;
+          width: 9px;
+          height: 9px;
+          background-color: #2ECC71;
+          border-radius: 50%;
+          box-shadow: 0 0 0 rgba(46, 204, 113, 0.4);
+          animation: greenPulse 1.6s infinite;
+        }
+        @keyframes greenPulse {
+          0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+          70% { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
         .bg-float-item {
           position: absolute;
           pointer-events: none;
@@ -856,15 +883,12 @@ export default function KittyChat() {
           .mobile-header-subtitle {
             font-size: 11px !important;
           }
-          .mobile-btn-text {
-            display: none;
-          }
           .mobile-btn-compact {
-            padding: 6px 10px !important;
-            font-size: 11.5px !important;
+            padding: 6px 8px !important;
+            font-size: 11px !important;
           }
           .chat-input-element {
-            font-size: 16px !important; /* Prevents auto zoom on mobile iOS Safari */
+            font-size: 16px !important;
           }
         }
       `}</style>
@@ -1143,22 +1167,28 @@ export default function KittyChat() {
               >
                 <span>🔄 Clear</span>
               </button>
+              {/* ACTIVE ONLINE USERS BUTTON */}
               <button
                 onClick={() => setShowUsersPanel(!showUsersPanel)}
                 className="mobile-btn-compact"
                 style={{
                   border: "none",
-                  background: showUsersPanel ? "#E85C8A" : "#FBEEF3",
-                  color: showUsersPanel ? "#FFFFFF" : "#B4577A",
+                  background: showUsersPanel ? "#E85C8A" : "#E8F8F0",
+                  color: showUsersPanel ? "#FFFFFF" : "#1E8449",
                   borderRadius: 12,
-                  padding: "7px 9px",
+                  padding: "7px 10px",
                   fontSize: 11.5,
                   fontFamily: "'Quicksand', sans-serif",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  boxShadow: "0 2px 6px rgba(46,204,113,0.15)",
                 }}
               >
-                👥 ({registeredUsers.length})
+                <span className="online-green-pulse" />
+                <span>{onlineUsersList.length} Online</span>
               </button>
               <button
                 onClick={handleLogout}
@@ -1188,8 +1218,14 @@ export default function KittyChat() {
               padding: "8px 12px",
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#B4577A", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
-              {BOW(14)} SELECT ROOM OR FRIEND:
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#B4577A", marginBottom: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                {BOW(14)} TALK TO FRIENDS:
+              </div>
+              <div style={{ fontSize: 10.5, color: "#27AE60", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                <span className="online-green-pulse" style={{ width: 7, height: 7 }} />
+                <span>{onlineUsersList.length} Active Now</span>
+              </div>
             </div>
             <div
               style={{
@@ -1236,14 +1272,22 @@ export default function KittyChat() {
                     key={u.name}
                     onClick={() => setActiveTarget(u.name)}
                     style={{
-                      border: isSelected ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
-                      background: isSelected ? "#FFE6EE" : "#FFFFFF",
+                      border: isSelected
+                        ? "2px solid #E85C8A"
+                        : online
+                        ? "1.5px solid #A3E4D7"
+                        : "1.5px solid #F6D9E4",
+                      background: isSelected
+                        ? "#FFE6EE"
+                        : online
+                        ? "#E8F8F5"
+                        : "#FFFFFF",
                       color: "#4A3B47",
                       borderRadius: 14,
                       padding: "5px 10px",
                       fontSize: 12,
                       fontFamily: "'Quicksand', sans-serif",
-                      fontWeight: isSelected ? 700 : 500,
+                      fontWeight: isSelected || online ? 700 : 500,
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                       display: "flex",
@@ -1252,15 +1296,17 @@ export default function KittyChat() {
                       boxShadow: isSelected ? "0 3px 10px rgba(232,92,138,0.2)" : "none",
                     }}
                   >
-                    <span
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: "50%",
-                        background: online ? "#2ECC71" : "#BDC3C7",
-                      }}
-                    />
+                    {online ? (
+                      <span className="online-green-pulse" style={{ width: 7, height: 7 }} />
+                    ) : (
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#BDC3C7" }} />
+                    )}
                     <span>{u.name}</span>
+                    {online && (
+                      <span style={{ fontSize: 9.5, color: "#117A65", fontWeight: 700 }}>
+                        (Online)
+                      </span>
+                    )}
                     {unread > 0 && (
                       <span
                         style={{
@@ -1285,20 +1331,20 @@ export default function KittyChat() {
             </div>
           </div>
 
-          {/* Collapsible Full Registered Users Directory Panel */}
+          {/* Collapsible Full Active Users Directory Panel */}
           {showUsersPanel && (
             <div
               style={{
                 background: "#FFFBFD",
                 borderBottom: "2px solid #FBEBF1",
                 padding: 12,
-                maxHeight: 220,
+                maxHeight: 260,
                 overflowY: "auto",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#4A3B47" }}>
-                  Registered Users ({registeredUsers.length})
+                  🟢 ACTIVE FRIENDS ONLINE ({onlineUsersList.length})
                 </span>
                 <div style={{ display: "flex", gap: 5 }}>
                   <button
@@ -1314,7 +1360,7 @@ export default function KittyChat() {
                       cursor: "pointer",
                     }}
                   >
-                    🔄 Clear Active Chat
+                    🔄 Clear Chat
                   </button>
                   <button
                     onClick={resetAllChats}
@@ -1329,21 +1375,25 @@ export default function KittyChat() {
                       cursor: "pointer",
                     }}
                   >
-                    🧹 Clear ALL Chats & DMs
+                    🧹 Clear ALL
                   </button>
                 </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {registeredUsers.map((u) => {
-                  const online = isUserOnline(u.name);
+
+              {/* Online Friends List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+                {onlineUsersList.map((u) => {
                   const isMe = u.name.toLowerCase() === name.trim().toLowerCase();
                   const avatarBg = getAvatarColor(u.name);
+                  const isSelected = activeTarget.toLowerCase() === u.name.toLowerCase();
                   return (
                     <div
                       key={u.name}
                       onClick={() => {
-                        if (!isMe) setActiveTarget(u.name);
-                        setShowUsersPanel(false);
+                        if (!isMe) {
+                          setActiveTarget(u.name);
+                          setShowUsersPanel(false);
+                        }
                       }}
                       className="user-item"
                       style={{
@@ -1352,21 +1402,21 @@ export default function KittyChat() {
                         justifyContent: "space-between",
                         padding: "8px 10px",
                         borderRadius: 12,
-                        background: activeTarget.toLowerCase() === u.name.toLowerCase() ? "#FFE6EE" : "#FFFFFF",
-                        border: "1px solid #F6D9E4",
+                        background: isSelected ? "#FFE6EE" : "#E8F8F5",
+                        border: "1px solid #A3E4D7",
                         cursor: isMe ? "default" : "pointer",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div
                           style={{
-                            width: 26,
-                            height: 26,
+                            width: 28,
+                            height: 28,
                             borderRadius: "50%",
                             background: avatarBg,
                             color: "#fff",
                             fontWeight: 700,
-                            fontSize: 12,
+                            fontSize: 13,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1375,19 +1425,89 @@ export default function KittyChat() {
                           {u.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: "#4A3B47" }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#117A65" }}>
                             {u.name} {isMe && "(You)"}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 600, color: online ? "#27AE60" : "#95A5A6" }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: online ? "#27AE60" : "#BDC3C7" }} />
-                        {online ? "Online" : "Offline"}
-                      </div>
+                      {!isMe && (
+                        <button
+                          style={{
+                            border: "none",
+                            background: "linear-gradient(135deg, #FF8FAB, #E85C8A)",
+                            color: "#fff",
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            borderRadius: 10,
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          💬 Talk Now
+                        </button>
+                      )}
                     </div>
                   );
                 })}
               </div>
+
+              {/* Offline Friends List */}
+              {offlineUsersList.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#95A5A6", marginBottom: 6 }}>
+                    ⚪ OFFLINE FRIENDS ({offlineUsersList.length})
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {offlineUsersList.map((u) => {
+                      const avatarBg = getAvatarColor(u.name);
+                      return (
+                        <div
+                          key={u.name}
+                          onClick={() => {
+                            setActiveTarget(u.name);
+                            setShowUsersPanel(false);
+                          }}
+                          className="user-item"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "6px 10px",
+                            borderRadius: 12,
+                            background: "#FFFFFF",
+                            border: "1px solid #F6D9E4",
+                            cursor: "pointer",
+                            opacity: 0.8,
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: "50%",
+                                background: "#BDC3C7",
+                                color: "#fff",
+                                fontWeight: 700,
+                                fontSize: 11,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {u.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: "#7F8C8D" }}>
+                              {u.name}
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 10, color: "#95A5A6" }}>Offline</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1614,7 +1734,7 @@ export default function KittyChat() {
                   borderRadius: 20,
                   border: "2px solid #F6D9E4",
                   outline: "none",
-                  fontSize: 16, // 16px font prevents iOS Safari from zooming in
+                  fontSize: 16,
                   fontFamily: "'Quicksand', sans-serif",
                   color: "#4A3B47",
                   background: "#FFFBFD",
