@@ -342,8 +342,16 @@ export default function KittyChat() {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
       const usersList = [];
-      snapshot.forEach((doc) => {
-        usersList.push(doc.data());
+      const myLow = (name || "").trim().toLowerCase();
+      snapshot.forEach((d) => {
+        const data = d.data();
+        const uLow = (data.name || "").trim().toLowerCase();
+        // Ignore prefix draft names like h, ha, har, hars when logged in as harsh
+        if (myLow && uLow !== myLow && myLow.startsWith(uLow)) {
+          return;
+        }
+        if (uLow.length < 2) return;
+        usersList.push(data);
       });
       setRegisteredUsers(usersList);
     }, (err) => {
@@ -351,7 +359,16 @@ export default function KittyChat() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [name]);
+
+  // If active target is a draft name (h, ha, har, hars), reset to global
+  useEffect(() => {
+    const myLow = (name || "").trim().toLowerCase();
+    const targetLow = (activeTarget || "").trim().toLowerCase();
+    if (myLow && targetLow !== "global" && myLow !== targetLow && myLow.startsWith(targetLow)) {
+      setActiveTarget("global");
+    }
+  }, [name, activeTarget]);
 
   // 🌐 HEARTBEAT PRESENCE UPDATE TO FIREBASE FIRESTORE
   useEffect(() => {
@@ -1011,13 +1028,13 @@ export default function KittyChat() {
         <div style={styles.card}>
           <div style={{ display: "flex", justifyContent: "center" }}>{HELLO_KITTY_AVATAR(68)}</div>
           <div style={styles.title}>Pyaru Pyaru Baatee 🎀</div>
-          <div style={styles.subtitle}>Enter your name to enter the chat room</div>
+          <div style={styles.subtitle}>Enter your username to enter the chat room</div>
 
           <input
             className="chat-input-element"
             style={styles.input}
             type="text"
-            placeholder="Enter your name..."
+            placeholder="Enter your username..."
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
@@ -1108,7 +1125,7 @@ export default function KittyChat() {
                   className="mobile-header-subtitle"
                   style={{ fontSize: 11, color: "#C79AB0", display: "flex", alignItems: "center", gap: 4 }}
                 >
-                  <span>hi, <strong>{name}</strong> ✨</span>
+                  <span>hi, <strong>@{name}</strong> ✨</span>
                 </div>
               </div>
             </div>
