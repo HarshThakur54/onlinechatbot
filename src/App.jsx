@@ -345,16 +345,11 @@ export default function KittyChat() {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
       const usersList = [];
-      const myLow = (name || "").trim().toLowerCase();
       snapshot.forEach((d) => {
         const data = d.data();
-        const uLow = (data.name || "").trim().toLowerCase();
-        // Ignore prefix draft names like h, ha, har, hars when logged in as harsh
-        if (myLow && uLow !== myLow && myLow.startsWith(uLow)) {
-          return;
+        if (data && data.name) {
+          usersList.push(data);
         }
-        if (uLow.length < 2) return;
-        usersList.push(data);
       });
       setRegisteredUsers(usersList);
     }, (err) => {
@@ -362,16 +357,7 @@ export default function KittyChat() {
     });
 
     return () => unsubscribe();
-  }, [name]);
-
-  // If active target is a draft name (h, ha, har, hars), reset to global
-  useEffect(() => {
-    const myLow = (name || "").trim().toLowerCase();
-    const targetLow = (activeTarget || "").trim().toLowerCase();
-    if (myLow && targetLow !== "global" && myLow !== targetLow && myLow.startsWith(targetLow)) {
-      setActiveTarget("global");
-    }
-  }, [name, activeTarget]);
+  }, []);
 
   // 🌐 HEARTBEAT PRESENCE UPDATE TO FIREBASE FIRESTORE
   useEffect(() => {
@@ -394,7 +380,7 @@ export default function KittyChat() {
     };
 
     updatePresence();
-    const interval = setInterval(updatePresence, 3000);
+    const interval = setInterval(updatePresence, 2500);
 
     return () => clearInterval(interval);
   }, [name]);
@@ -421,7 +407,7 @@ export default function KittyChat() {
     setError("");
     const trimmed = name.trim();
     if (!validName(trimmed)) {
-      setError("Please enter a name with at least 2 characters.");
+      setError("Please enter a username with at least 2 characters.");
       return;
     }
 
@@ -582,21 +568,25 @@ export default function KittyChat() {
     if (low === name.trim().toLowerCase()) return true;
 
     const userObj = registeredUsers.find((u) => (u.name || "").trim().toLowerCase() === low);
-    if (userObj && userObj.lastActive && Date.now() - userObj.lastActive < 10000) {
+    if (userObj && userObj.lastActive && Date.now() - userObj.lastActive < 20000) {
       return true;
     }
     return false;
   };
 
-  // Deduplicate & filter out partial single/two-letter test names unless active
+  // Deduplicate all registered users case-insensitively
   const uniqueUsersList = registeredUsers.reduce((acc, u) => {
     const uName = (u.name || "").trim();
     if (!uName || uName.length < 2) return acc;
     const uKey = uName.toLowerCase();
-    const isOnline = isUserOnline(uName);
-    const isMe = uKey === name.trim().toLowerCase();
+    const myLow = name.trim().toLowerCase();
 
-    if ((isOnline || isMe) && !acc.some((existing) => (existing.name || "").trim().toLowerCase() === uKey)) {
+    // Omit incomplete draft prefixes if current user is logged in
+    if (myLow && uKey !== myLow && myLow.startsWith(uKey)) {
+      return acc;
+    }
+
+    if (!acc.some((existing) => (existing.name || "").trim().toLowerCase() === uKey)) {
       acc.push(u);
     }
     return acc;
