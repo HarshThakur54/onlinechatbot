@@ -194,10 +194,10 @@ const LOVELY_MESSAGES = [
   "✨ Life is sweeter when we share lovely moments together! 🎀",
 ];
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v8";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v8";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v8";
-const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v8";
+const CHANNEL_NAME = "kitty_chat_broadcast_v9";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v9";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v9";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v9";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -218,14 +218,14 @@ const getAvatarColor = (str) => {
 
 export default function KittyChat() {
   const [screen, setScreen] = useState("auth"); // auth | chat
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
 
   // Registered Users Registry & Presence map
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [onlinePings, setOnlinePings] = useState(new Map());
 
-  // Messages & Active Chat Target ("global" or user email)
+  // Messages & Active Chat Target ("global" or user name)
   const [activeTarget, setActiveTarget] = useState("global");
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -248,14 +248,7 @@ export default function KittyChat() {
     return () => clearInterval(quoteInterval);
   }, []);
 
-  // Derive display name
-  const getDisplayName = (emailStr) => {
-    if (!emailStr) return "";
-    const parts = emailStr.split("@");
-    return parts[0] || emailStr;
-  };
-
-  const username = getDisplayName(email);
+  const username = name.trim();
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -275,7 +268,7 @@ export default function KittyChat() {
   // Register or update user in storage & broadcast
   const registerUserInStore = (userObj) => {
     const list = loadRegisteredUsers();
-    const existingIdx = list.findIndex((u) => u.email === userObj.email);
+    const existingIdx = list.findIndex((u) => u.name.toLowerCase() === userObj.name.toLowerCase());
     let updated;
     if (existingIdx >= 0) {
       updated = [...list];
@@ -362,8 +355,8 @@ export default function KittyChat() {
       const savedSession = localStorage.getItem(ACTIVE_SESSION_KEY);
       if (savedSession) {
         const sessionData = JSON.parse(savedSession);
-        if (sessionData?.email) {
-          setEmail(sessionData.email);
+        if (sessionData?.name) {
+          setName(sessionData.name);
           setScreen("chat");
         }
       }
@@ -389,10 +382,10 @@ export default function KittyChat() {
     channelRef.current = channel;
 
     const sendMyPing = () => {
-      if (email) {
+      if (name) {
         channel.postMessage({
           type: "PRESENCE_PING",
-          payload: { email: email.toLowerCase(), username: getDisplayName(email) },
+          payload: { name: name.trim() },
         });
       }
     };
@@ -407,21 +400,21 @@ export default function KittyChat() {
           return updated;
         });
       } else if (type === "PRESENCE_PING") {
-        if (payload?.email) {
-          const incomingEmail = payload.email.toLowerCase();
-          const incomingName = payload.username || getDisplayName(incomingEmail);
+        if (payload?.name) {
+          const incomingName = payload.name.trim();
+          const incomingKey = incomingName.toLowerCase();
 
           setOnlinePings((prev) => {
             const next = new Map(prev);
-            next.set(incomingEmail, Date.now());
+            next.set(incomingKey, Date.now());
             return next;
           });
 
           setRegisteredUsers((prev) => {
-            if (!prev.some((u) => u.email === incomingEmail)) {
+            if (!prev.some((u) => u.name.toLowerCase() === incomingKey)) {
               const updated = [
                 ...prev,
-                { email: incomingEmail, username: incomingName, registeredAt: Date.now() },
+                { name: incomingName, registeredAt: Date.now() },
               ];
               localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
               return updated;
@@ -447,8 +440,8 @@ export default function KittyChat() {
             updated = prev.filter(
               (m) =>
                 !(
-                  (m.senderEmail === uLow && m.recipientTarget === tLow) ||
-                  (m.senderEmail === tLow && m.recipientTarget === uLow)
+                  (m.senderName.toLowerCase() === uLow && m.recipientTarget.toLowerCase() === tLow) ||
+                  (m.senderName.toLowerCase() === tLow && m.recipientTarget.toLowerCase() === uLow)
                 )
             );
           } else {
@@ -465,10 +458,10 @@ export default function KittyChat() {
       }
     };
 
-    if (email) {
+    if (name) {
       channel.postMessage({
         type: "PRESENCE_PING",
-        payload: { email: email.toLowerCase(), username: getDisplayName(email), isInitial: true },
+        payload: { name: name.trim(), isInitial: true },
       });
       const currentList = loadRegisteredUsers();
       channel.postMessage({ type: "USERS_UPDATED", payload: currentList });
@@ -479,9 +472,9 @@ export default function KittyChat() {
       setOnlinePings((prev) => {
         const now = Date.now();
         const next = new Map();
-        prev.forEach((lastSeen, uEmail) => {
+        prev.forEach((lastSeen, uNameKey) => {
           if (now - lastSeen < 6000) {
-            next.set(uEmail, lastSeen);
+            next.set(uNameKey, lastSeen);
           }
         });
         return next;
@@ -492,43 +485,40 @@ export default function KittyChat() {
       clearInterval(interval);
       channel.close();
     };
-  }, [email]);
+  }, [name]);
 
-  const validEmail = (v) => Boolean(v && v.trim().length > 0);
+  const validName = (v) => Boolean(v && v.trim().length > 0);
 
   const handleLogin = () => {
     setError("");
-    const trimmed = email.trim();
-    if (!validEmail(trimmed)) {
-      setError("Please enter your email to continue.");
+    const trimmed = name.trim();
+    if (!validName(trimmed)) {
+      setError("Please enter your name to continue.");
       return;
     }
-    const lowEmail = trimmed.toLowerCase();
-    const displayName = getDisplayName(lowEmail);
 
     const newUser = {
-      email: lowEmail,
-      username: displayName,
+      name: trimmed,
       registeredAt: Date.now(),
     };
 
     registerUserInStore(newUser);
-    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ email: lowEmail }));
+    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ name: trimmed }));
 
-    setEmail(lowEmail);
+    setName(trimmed);
     setMessages(loadAllMessages());
     setScreen("chat");
 
     channelRef.current?.postMessage({
       type: "PRESENCE_PING",
-      payload: { email: lowEmail, username: displayName, isInitial: true },
+      payload: { name: trimmed, isInitial: true },
     });
   };
 
   const handleLogout = () => {
     localStorage.removeItem(ACTIVE_SESSION_KEY);
     setScreen("auth");
-    setEmail("");
+    setName("");
     setInput("");
     setSelectedImage(null);
     setError("");
@@ -540,8 +530,7 @@ export default function KittyChat() {
 
     const newMsg = {
       id: Date.now() + "_" + Math.random().toString(36).substr(2, 9),
-      senderEmail: email.toLowerCase(),
-      senderUsername: username,
+      senderName: name.trim(),
       recipientTarget: activeTarget,
       content: text,
       image: selectedImage,
@@ -565,19 +554,19 @@ export default function KittyChat() {
 
   // Reset ONLY Current Active Chat
   const resetActiveChat = () => {
-    const myEmail = email.toLowerCase();
-    const target = activeTarget.toLowerCase();
+    const myNameKey = name.trim().toLowerCase();
+    const targetKey = activeTarget.toLowerCase();
 
     setMessages((prev) => {
       let updated;
-      if (target === "global") {
+      if (targetKey === "global") {
         updated = prev.filter((m) => m.recipientTarget && m.recipientTarget !== "global");
       } else {
         updated = prev.filter(
           (m) =>
             !(
-              (m.senderEmail === myEmail && m.recipientTarget === target) ||
-              (m.senderEmail === target && m.recipientTarget === myEmail)
+              (m.senderName.toLowerCase() === myNameKey && m.recipientTarget.toLowerCase() === targetKey) ||
+              (m.senderName.toLowerCase() === targetKey && m.recipientTarget.toLowerCase() === myNameKey)
             )
         );
       }
@@ -587,10 +576,10 @@ export default function KittyChat() {
 
     channelRef.current?.postMessage({
       type: "RESET_TARGET_CHAT",
-      payload: { target, user: myEmail },
+      payload: { target: targetKey, user: myNameKey },
     });
 
-    const roomLabel = target === "global" ? "Group Chat" : `Chat with ${activeTargetUserObj?.username || target}`;
+    const roomLabel = targetKey === "global" ? "Group Chat" : `Chat with ${activeTargetUserObj?.name || activeTarget}`;
     showToast(`🧹 ${roomLabel} Reset!`);
   };
 
@@ -610,38 +599,39 @@ export default function KittyChat() {
     if (activeTarget === "global") {
       return !m.recipientTarget || m.recipientTarget === "global";
     } else {
-      const myEmail = email.toLowerCase();
-      const targetEmail = activeTarget.toLowerCase();
+      const myNameKey = name.trim().toLowerCase();
+      const targetKey = activeTarget.toLowerCase();
       return (
-        (m.senderEmail === myEmail && m.recipientTarget === targetEmail) ||
-        (m.senderEmail === targetEmail && m.recipientTarget === myEmail)
+        (m.senderName.toLowerCase() === myNameKey && m.recipientTarget.toLowerCase() === targetKey) ||
+        (m.senderName.toLowerCase() === targetKey && m.recipientTarget.toLowerCase() === myNameKey)
       );
     }
   });
 
-  const getUnreadCount = (targetEmail) => {
-    const myEmail = email.toLowerCase();
+  const getUnreadCount = (targetName) => {
+    const myNameKey = name.trim().toLowerCase();
+    const targetKey = targetName.toLowerCase();
     return messages.filter(
       (m) =>
-        m.senderEmail === targetEmail &&
-        m.recipientTarget === myEmail &&
-        activeTarget !== targetEmail
+        m.senderName.toLowerCase() === targetKey &&
+        m.recipientTarget.toLowerCase() === myNameKey &&
+        activeTarget.toLowerCase() !== targetKey
     ).length;
   };
 
-  const isUserOnline = (userEmail) => {
-    if (userEmail === email.toLowerCase()) return true;
-    return onlinePings.has(userEmail.toLowerCase());
+  const isUserOnline = (userNameStr) => {
+    if (userNameStr.toLowerCase() === name.trim().toLowerCase()) return true;
+    return onlinePings.has(userNameStr.toLowerCase());
   };
 
   const otherRegisteredUsers = registeredUsers.filter(
-    (u) => u.email !== email.toLowerCase()
+    (u) => u.name.toLowerCase() !== name.trim().toLowerCase()
   );
 
   const activeTargetUserObj =
     activeTarget === "global"
       ? null
-      : registeredUsers.find((u) => u.email === activeTarget.toLowerCase());
+      : registeredUsers.find((u) => u.name.toLowerCase() === activeTarget.toLowerCase());
 
   const styles = {
     page: {
@@ -853,7 +843,7 @@ export default function KittyChat() {
       <div className="bg-float-item" style={{ left: "85%", animationDuration: "11s", animationDelay: "3s" }}>🎀</div>
       <div className="bg-float-item" style={{ left: "48%", animationDuration: "10s", animationDelay: "4s" }}>🐾</div>
 
-      {/* BACKGROUND RUNNING ANIMATION: Hello Kitty & Cat running around */}
+      {/* BACKGROUND RUNNING ANIMATION */}
       {RUNNING_HELLO_KITTY()}
       {RUNNING_CAT()}
 
@@ -995,14 +985,14 @@ export default function KittyChat() {
         <div style={styles.card}>
           <div style={{ display: "flex", justifyContent: "center" }}>{HELLO_KITTY_AVATAR(68)}</div>
           <div style={styles.title}>Pyaru Pyaru Baatee 🎀</div>
-          <div style={styles.subtitle}>Enter your email to enter the chat room</div>
+          <div style={styles.subtitle}>Enter your name to enter the chat room</div>
 
           <input
             style={styles.input}
             type="text"
-            placeholder="Enter your email..."
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your name..."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             autoFocus
           />
@@ -1072,10 +1062,10 @@ export default function KittyChat() {
                 <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 16, color: "#4A3B47", fontWeight: 600 }}>
                   {activeTarget === "global"
                     ? "Pyaru Pyaru Baatee 🎀"
-                    : `💬 Chat with ${activeTargetUserObj?.username || activeTarget}`}
+                    : `💬 Chat with ${activeTargetUserObj?.name || activeTarget}`}
                 </div>
                 <div style={{ fontSize: 12, color: "#C79AB0", display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>hi, <strong>{email}</strong> ✨</span>
+                  <span>hi, <strong>{name}</strong> ✨</span>
                 </div>
               </div>
             </div>
@@ -1083,7 +1073,7 @@ export default function KittyChat() {
               {/* TARGETED RESET CHAT BUTTON */}
               <button
                 onClick={resetActiveChat}
-                title={activeTarget === "global" ? "Reset Group Chat" : `Reset Personal Chat with ${activeTargetUserObj?.username || activeTarget}`}
+                title={activeTarget === "global" ? "Reset Group Chat" : `Reset Personal Chat with ${activeTargetUserObj?.name || activeTarget}`}
                 style={{
                   border: "none",
                   background: "#FFE6EE",
@@ -1100,7 +1090,7 @@ export default function KittyChat() {
                   boxShadow: "0 2px 6px rgba(217,67,106,0.15)",
                 }}
               >
-                🔄 {activeTarget === "global" ? "Clear Group Chat" : `Clear Chat (${activeTargetUserObj?.username || activeTarget})`}
+                🔄 {activeTarget === "global" ? "Clear Group Chat" : `Clear Chat (${activeTargetUserObj?.name || activeTarget})`}
               </button>
               <button
                 onClick={() => setShowUsersPanel(!showUsersPanel)}
@@ -1184,13 +1174,13 @@ export default function KittyChat() {
 
               {/* List of Registered Users */}
               {otherRegisteredUsers.map((u) => {
-                const online = isUserOnline(u.email);
-                const unread = getUnreadCount(u.email);
-                const isSelected = activeTarget.toLowerCase() === u.email.toLowerCase();
+                const online = isUserOnline(u.name);
+                const unread = getUnreadCount(u.name);
+                const isSelected = activeTarget.toLowerCase() === u.name.toLowerCase();
                 return (
                   <button
-                    key={u.email}
-                    onClick={() => setActiveTarget(u.email)}
+                    key={u.name}
+                    onClick={() => setActiveTarget(u.name)}
                     style={{
                       border: isSelected ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
                       background: isSelected ? "#FFE6EE" : "#FFFFFF",
@@ -1216,7 +1206,7 @@ export default function KittyChat() {
                         background: online ? "#2ECC71" : "#BDC3C7",
                       }}
                     />
-                    <span>{u.username}</span>
+                    <span>{u.name}</span>
                     {unread > 0 && (
                       <span
                         style={{
@@ -1291,14 +1281,14 @@ export default function KittyChat() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {registeredUsers.map((u) => {
-                  const online = isUserOnline(u.email);
-                  const isMe = u.email === email.toLowerCase();
-                  const avatarBg = getAvatarColor(u.username);
+                  const online = isUserOnline(u.name);
+                  const isMe = u.name.toLowerCase() === name.trim().toLowerCase();
+                  const avatarBg = getAvatarColor(u.name);
                   return (
                     <div
-                      key={u.email}
+                      key={u.name}
                       onClick={() => {
-                        if (!isMe) setActiveTarget(u.email);
+                        if (!isMe) setActiveTarget(u.name);
                         setShowUsersPanel(false);
                       }}
                       className="user-item"
@@ -1308,7 +1298,7 @@ export default function KittyChat() {
                         justifyContent: "space-between",
                         padding: "8px 10px",
                         borderRadius: 12,
-                        background: activeTarget.toLowerCase() === u.email ? "#FFE6EE" : "#FFFFFF",
+                        background: activeTarget.toLowerCase() === u.name.toLowerCase() ? "#FFE6EE" : "#FFFFFF",
                         border: "1px solid #F6D9E4",
                         cursor: isMe ? "default" : "pointer",
                       }}
@@ -1328,13 +1318,12 @@ export default function KittyChat() {
                             justifyContent: "center",
                           }}
                         >
-                          {u.username.charAt(0).toUpperCase()}
+                          {u.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#4A3B47" }}>
-                            {u.username} {isMe && "(You)"}
+                            {u.name} {isMe && "(You)"}
                           </div>
-                          <div style={{ fontSize: 10.5, color: "#B48A9C" }}>{u.email}</div>
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: online ? "#27AE60" : "#95A5A6" }}>
@@ -1392,7 +1381,7 @@ export default function KittyChat() {
                 <div style={{ marginTop: 12, fontFamily: "'Fredoka', sans-serif", fontSize: 16 }}>
                   {activeTarget === "global"
                     ? "Welcome to Pyaru Pyaru Baatee! 🎀"
-                    : `No messages with ${activeTargetUserObj?.username || activeTarget} yet!`}
+                    : `No messages with ${activeTargetUserObj?.name || activeTarget} yet!`}
                 </div>
                 <div style={{ fontSize: 12.5, marginTop: 4 }}>
                   Type a message or send an image below! 📷✨🐾
@@ -1400,7 +1389,7 @@ export default function KittyChat() {
               </div>
             ) : (
               filteredMessages.map((m) => {
-                const isMe = m.senderEmail === email.toLowerCase();
+                const isMe = m.senderName.toLowerCase() === name.trim().toLowerCase();
                 return (
                   <div
                     key={m.id}
@@ -1426,7 +1415,7 @@ export default function KittyChat() {
                           gap: 4,
                         }}
                       >
-                        {BOW(14)} {m.senderUsername}
+                        {BOW(14)} {m.senderName}
                       </div>
                     )}
                     <div
@@ -1571,7 +1560,7 @@ export default function KittyChat() {
                 placeholder={
                   activeTarget === "global"
                     ? "Message Everyone... 🎀"
-                    : `Message ${activeTargetUserObj?.username || activeTarget}... ✨`
+                    : `Message ${activeTargetUserObj?.name || activeTarget}... ✨`
                 }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
