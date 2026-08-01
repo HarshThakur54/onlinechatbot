@@ -429,11 +429,18 @@ export default function KittyChat() {
     setInput("");
     setSelectedImage(null);
 
+    // Optimistic UI update
+    setMessages((prev) => [...prev, newMsg]);
+
     try {
       await addDoc(collection(db, "messages"), newMsg);
     } catch (e) {
       console.error("Send message error", e);
-      showToast("❌ Message failed to send");
+      if (e.code === "permission-denied" || (e.message && e.message.includes("permission"))) {
+        showToast("⚠️ Firestore Rules locked! Set allow read, write: if true in Console");
+      } else {
+        showToast("❌ Message failed to send");
+      }
     }
   };
 
