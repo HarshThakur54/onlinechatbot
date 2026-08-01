@@ -49,7 +49,7 @@ const HELLO_KITTY_AVATAR = (size = 36) => (
     <path d="M 88 50 L 98 48 M 90 56 L 100 56 M 88 62 L 98 64" stroke="#4A3B47" strokeWidth="3.5" strokeLinecap="round" />
     {/* Bow on right ear */}
     <g transform="translate(62, 16) scale(1.2)">
-      <path d="M12 12C12 12 9 6 4 6C2 6 1 8 1 9.5C1 11.5 3 12 4 12C3 12 1 12.5 1 14.5C1 16 2 18 4 18C9 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
+      <path d="M12 12C12 12 9 6 4 6C2 6 1 8 1 9.5C1 11.5 3 12 4 12C3 12 1 12.5 1 14.5C1 16 2 18 4 18C15 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
       <path d="M12 12C12 12 15 6 20 6C22 6 23 8 23 9.5C23 11.5 21 12 20 12C21 12 23 12.5 23 14.5C23 16 22 18 20 18C15 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
       <circle cx="12" cy="12" r="2.8" fill="#FFD166" stroke="#4A3B47" strokeWidth="1.5" />
     </g>
@@ -112,10 +112,10 @@ const PawDivider = () => (
   </div>
 );
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v5";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v5";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v5";
-const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v5";
+const CHANNEL_NAME = "kitty_chat_broadcast_v6";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v6";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v6";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v6";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -139,12 +139,12 @@ export default function KittyChat() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
 
-  // Registered Users Registry
+  // Registered Users Registry & Presence map
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [onlinePings, setOnlinePings] = useState(new Map());
 
   // Messages & Active Chat Target ("global" or user email)
-  const [activeTarget, setActiveTarget] = useState("global"); // "global" | userEmail
+  const [activeTarget, setActiveTarget] = useState("global");
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [showUsersPanel, setShowUsersPanel] = useState(false);
@@ -153,7 +153,7 @@ export default function KittyChat() {
   const scrollRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Derive user display name from email
+  // Derive display name
   const getDisplayName = (emailStr) => {
     if (!emailStr) return "";
     const parts = emailStr.split("@");
@@ -162,7 +162,7 @@ export default function KittyChat() {
 
   const username = getDisplayName(email);
 
-  // Helper to load registered users
+  // Load registered users from storage
   const loadRegisteredUsers = () => {
     try {
       const raw = localStorage.getItem(REGISTERED_USERS_KEY);
@@ -172,6 +172,7 @@ export default function KittyChat() {
     }
   };
 
+  // Register or update user in storage & broadcast
   const registerUserInStore = (userObj) => {
     const list = loadRegisteredUsers();
     const existingIdx = list.findIndex((u) => u.email === userObj.email);
@@ -188,7 +189,7 @@ export default function KittyChat() {
     return updated;
   };
 
-  // Helper to load messages
+  // Load messages from storage
   const loadAllMessages = () => {
     try {
       const raw = localStorage.getItem(GLOBAL_MSGS_KEY);
@@ -241,10 +242,19 @@ export default function KittyChat() {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // BroadcastChannel for Real-time Messaging & Presence
+  // BroadcastChannel Instant Bidirectional Handshake Presence & Messaging
   useEffect(() => {
     const channel = new BroadcastChannel(CHANNEL_NAME);
     channelRef.current = channel;
+
+    const sendMyPing = () => {
+      if (email) {
+        channel.postMessage({
+          type: "PRESENCE_PING",
+          payload: { email: email.toLowerCase(), username: getDisplayName(email) },
+        });
+      }
+    };
 
     channel.onmessage = (event) => {
       const { type, payload } = event.data || {};
@@ -257,11 +267,33 @@ export default function KittyChat() {
         });
       } else if (type === "PRESENCE_PING") {
         if (payload?.email) {
+          const incomingEmail = payload.email.toLowerCase();
+          const incomingName = payload.username || getDisplayName(incomingEmail);
+
+          // Update online status map
           setOnlinePings((prev) => {
             const next = new Map(prev);
-            next.set(payload.email.toLowerCase(), Date.now());
+            next.set(incomingEmail, Date.now());
             return next;
           });
+
+          // Ensure incoming user is registered in local state
+          setRegisteredUsers((prev) => {
+            if (!prev.some((u) => u.email === incomingEmail)) {
+              const updated = [
+                ...prev,
+                { email: incomingEmail, username: incomingName, registeredAt: Date.now() },
+              ];
+              localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
+              return updated;
+            }
+            return prev;
+          });
+
+          // If this is a newly arrived user, reply with my ping so both sides immediately know each other are online!
+          if (payload.isInitial) {
+            sendMyPing();
+          }
         }
       } else if (type === "USERS_UPDATED") {
         setRegisteredUsers(payload || []);
@@ -272,14 +304,20 @@ export default function KittyChat() {
       }
     };
 
-    // Presence Heartbeat
+    // Announce presence immediately on load/login
+    if (email) {
+      channel.postMessage({
+        type: "PRESENCE_PING",
+        payload: { email: email.toLowerCase(), username: getDisplayName(email), isInitial: true },
+      });
+      // Broadcast registered users list
+      const currentList = loadRegisteredUsers();
+      channel.postMessage({ type: "USERS_UPDATED", payload: currentList });
+    }
+
+    // Periodic Heartbeat every 1.5 seconds
     const interval = setInterval(() => {
-      if (email) {
-        channel.postMessage({
-          type: "PRESENCE_PING",
-          payload: { email: email.toLowerCase(), username: getDisplayName(email) },
-        });
-      }
+      sendMyPing();
       setOnlinePings((prev) => {
         const now = Date.now();
         const next = new Map();
@@ -290,7 +328,7 @@ export default function KittyChat() {
         });
         return next;
       });
-    }, 2000);
+    }, 1500);
 
     return () => {
       clearInterval(interval);
@@ -322,6 +360,12 @@ export default function KittyChat() {
     setEmail(lowEmail);
     setMessages(loadAllMessages());
     setScreen("chat");
+
+    // Instantly notify all existing tabs that a new user came live!
+    channelRef.current?.postMessage({
+      type: "PRESENCE_PING",
+      payload: { email: lowEmail, username: displayName, isInitial: true },
+    });
   };
 
   const handleLogout = () => {
