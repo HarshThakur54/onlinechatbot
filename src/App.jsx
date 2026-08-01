@@ -102,6 +102,78 @@ const HELLO_KITTY_MASCOT = ({ wave = false }) => (
   </svg>
 );
 
+// Running Hello Kitty SVG mascot
+const RUNNING_HELLO_KITTY = () => (
+  <div
+    className="running-kitty-sprite"
+    style={{
+      position: "fixed",
+      bottom: "10px",
+      zIndex: 3,
+      pointerEvents: "none",
+    }}
+  >
+    <svg width="42" height="42" viewBox="0 0 100 100" fill="none">
+      {/* Ears */}
+      <path d="M 22 36 L 12 15 L 36 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 78 36 L 88 15 L 64 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 23 34 L 17 21 L 32 26 Z" fill="#FFB7CE" />
+      <path d="M 77 34 L 83 21 L 68 26 Z" fill="#FFB7CE" />
+      {/* Body & running paws */}
+      <ellipse cx="50" cy="82" rx="22" ry="14" fill="#E85C8A" stroke="#4A3B47" strokeWidth="3" />
+      <circle cx="36" cy="94" r="5" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="2.5" />
+      <circle cx="64" cy="94" r="5" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="2.5" />
+      {/* Head */}
+      <ellipse cx="50" cy="55" rx="42" ry="34" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" />
+      {/* Eyes & Nose */}
+      <ellipse cx="32" cy="54" rx="4" ry="6" fill="#4A3B47" />
+      <ellipse cx="68" cy="54" rx="4" ry="6" fill="#4A3B47" />
+      <ellipse cx="50" cy="61" rx="4.5" ry="3.5" fill="#FFD166" stroke="#4A3B47" strokeWidth="1.5" />
+      {/* Whiskers */}
+      <path d="M 12 50 L 2 48 M 10 56 L 0 56 M 12 62 L 2 64" stroke="#4A3B47" strokeWidth="3" strokeLinecap="round" />
+      <path d="M 88 50 L 98 48 M 90 56 L 100 56 M 88 62 L 98 64" stroke="#4A3B47" strokeWidth="3" strokeLinecap="round" />
+      {/* Pink Bow */}
+      <g transform="translate(62, 16) scale(1.1)">
+        <path d="M12 12C12 12 9 6 4 6C2 6 1 8 1 9.5C1 11.5 3 12 4 12C3 12 1 12.5 1 14.5C1 16 2 18 4 18C15 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
+        <path d="M12 12C12 12 15 6 20 6C22 6 23 8 23 9.5C23 11.5 21 12 20 12C21 12 23 12.5 23 14.5C23 16 22 18 20 18C15 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="2.8" fill="#FFD166" stroke="#4A3B47" strokeWidth="1.5" />
+      </g>
+    </svg>
+  </div>
+);
+
+// Running Kitty Friend Cat SVG
+const RUNNING_CAT = () => (
+  <div
+    className="running-cat-sprite"
+    style={{
+      position: "fixed",
+      bottom: "24px",
+      zIndex: 3,
+      pointerEvents: "none",
+    }}
+  >
+    <svg width="38" height="38" viewBox="0 0 100 100" fill="none">
+      {/* Tail */}
+      <path d="M 15 65 Q 5 40 12 25" stroke="#FF8FAB" strokeWidth="6" strokeLinecap="round" fill="none" />
+      {/* Body */}
+      <ellipse cx="50" cy="70" rx="30" ry="18" fill="#FFB7CE" stroke="#4A3B47" strokeWidth="3.5" />
+      <circle cx="30" cy="85" r="4.5" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="2" />
+      <circle cx="70" cy="85" r="4.5" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="2" />
+      {/* Ears */}
+      <path d="M 32 45 L 22 25 L 42 34 Z" fill="#FF8FAB" stroke="#4A3B47" strokeWidth="3" />
+      <path d="M 68 45 L 78 25 L 58 34 Z" fill="#FF8FAB" stroke="#4A3B47" strokeWidth="3" />
+      {/* Head */}
+      <circle cx="50" cy="50" r="24" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="3.5" />
+      {/* Face details */}
+      <ellipse cx="42" cy="48" rx="3" ry="4" fill="#4A3B47" />
+      <ellipse cx="58" cy="48" rx="3" ry="4" fill="#4A3B47" />
+      <polygon points="50,54 47,51 53,51" fill="#FF8FAB" />
+      <path d="M 28 50 L 16 48 M 28 54 L 16 56 M 72 50 L 84 48 M 72 54 L 84 56" stroke="#4A3B47" strokeWidth="2.5" />
+    </svg>
+  </div>
+);
+
 const PawDivider = () => (
   <div style={{ display: "flex", justifyContent: "center", gap: 10, margin: "18px 0" }}>
     {[0, 1, 2, 3].map((i) => (
@@ -112,10 +184,20 @@ const PawDivider = () => (
   </div>
 );
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v7";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v7";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v7";
-const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v7";
+const LOVELY_MESSAGES = [
+  "🎀 Spread love & sweetness everywhere you go! ✨",
+  "💖 Pyaru Pyaru Baatee — making every conversation special! 🌸",
+  "🐾 Soft paws, warm hearts, and sweet conversations! 🎀",
+  "✨ You are wonderful just the way you are! 💕",
+  "🎀 Happiness is chatting with friends on Pyaru Pyaru Baatee! ✨",
+  "🌸 Sending virtual hugs & warm pastel wishes! 💖",
+  "✨ Life is sweeter when we share lovely moments together! 🎀",
+];
+
+const CHANNEL_NAME = "kitty_chat_broadcast_v8";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v8";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v8";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v8";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -147,11 +229,24 @@ export default function KittyChat() {
   const [activeTarget, setActiveTarget] = useState("global");
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewImageModal, setPreviewImageModal] = useState(null);
+
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [lovelyQuoteIndex, setLovelyQuoteIndex] = useState(0);
 
   const scrollRef = useRef(null);
   const channelRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Rotate lovely banner message every 30 seconds
+  useEffect(() => {
+    const quoteInterval = setInterval(() => {
+      setLovelyQuoteIndex((prev) => (prev + 1) % LOVELY_MESSAGES.length);
+    }, 30000);
+    return () => clearInterval(quoteInterval);
+  }, []);
 
   // Derive display name
   const getDisplayName = (emailStr) => {
@@ -212,10 +307,51 @@ export default function KittyChat() {
     }
   };
 
+  // Compress image before saving/sending
+  const handleImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("⚠️ Please select a valid image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxDim = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+        setSelectedImage(dataUrl);
+      };
+    };
+  };
+
   // Scroll to bottom on message updates
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, activeTarget]);
+  }, [messages, activeTarget, selectedImage]);
 
   // Initial load + Session Auto-Login on Refresh
   useEffect(() => {
@@ -394,13 +530,13 @@ export default function KittyChat() {
     setScreen("auth");
     setEmail("");
     setInput("");
+    setSelectedImage(null);
     setError("");
   };
 
   const send = () => {
     const text = input.trim();
-    if (!text) return;
-    setInput("");
+    if (!text && !selectedImage) return;
 
     const newMsg = {
       id: Date.now() + "_" + Math.random().toString(36).substr(2, 9),
@@ -408,8 +544,12 @@ export default function KittyChat() {
       senderUsername: username,
       recipientTarget: activeTarget,
       content: text,
+      image: selectedImage,
       timestamp: Date.now(),
     };
+
+    setInput("");
+    setSelectedImage(null);
 
     setMessages((prev) => {
       const updated = [...prev, newMsg];
@@ -423,7 +563,7 @@ export default function KittyChat() {
     });
   };
 
-  // Reset ONLY Current Active Chat (Group room OR active 1-on-1 personal chat)
+  // Reset ONLY Current Active Chat
   const resetActiveChat = () => {
     const myEmail = email.toLowerCase();
     const target = activeTarget.toLowerCase();
@@ -431,10 +571,8 @@ export default function KittyChat() {
     setMessages((prev) => {
       let updated;
       if (target === "global") {
-        // Clear group chat only
         updated = prev.filter((m) => m.recipientTarget && m.recipientTarget !== "global");
       } else {
-        // Clear 1-on-1 personal chat with active target only
         updated = prev.filter(
           (m) =>
             !(
@@ -456,7 +594,7 @@ export default function KittyChat() {
     showToast(`🧹 ${roomLabel} Reset!`);
   };
 
-  // Reset ALL Chats Everywhere (Group + All Personal DMs)
+  // Reset ALL Chats Everywhere
   const resetAllChats = () => {
     setMessages([]);
     saveAllMessages([]);
@@ -588,7 +726,6 @@ export default function KittyChat() {
         ::-webkit-scrollbar-thumb { background: #F0C4D6; border-radius: 10px; }
         .user-item:hover { background: #FFF0F5 !important; }
 
-        /* Hello Kitty Animations */
         .kitty-head-bounce {
           animation: kittyBounce 3s ease-in-out infinite;
         }
@@ -606,7 +743,6 @@ export default function KittyChat() {
           60% { transform: scale(1.15) rotate(6deg); }
         }
 
-        /* Mascot animations for Laptop sides */
         .kitty-waving-mascot {
           animation: mascotWave 4s ease-in-out infinite;
         }
@@ -641,7 +777,6 @@ export default function KittyChat() {
           50% { opacity: 1; transform: scale(1.2); }
         }
 
-        /* Floating Background Bows & Sparkles */
         .bg-float-item {
           position: absolute;
           pointer-events: none;
@@ -655,7 +790,6 @@ export default function KittyChat() {
           100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
         }
 
-        /* Message Bubble Entrance Animation */
         .msg-bubble-animated {
           animation: msgPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -664,7 +798,6 @@ export default function KittyChat() {
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* Toast animation */
         .reset-toast-animated {
           animation: toastSlide 0.3s ease-out;
         }
@@ -673,7 +806,39 @@ export default function KittyChat() {
           100% { transform: translateY(0); opacity: 1; }
         }
 
-        /* RESPONSIVE LAYOUT RULES */
+        /* Lovely Rotating Quote Transition */
+        .lovely-quote-banner {
+          animation: quoteFadeIn 0.8s ease-in-out;
+        }
+        @keyframes quoteFadeIn {
+          0% { opacity: 0; transform: translateY(-4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hello Kitty Running Back & Forth */
+        @keyframes kittyRunLoop {
+          0% { left: -60px; transform: scaleX(1); }
+          47.5% { left: calc(100vw + 60px); transform: scaleX(1); }
+          50% { left: calc(100vw + 60px); transform: scaleX(-1); }
+          97.5% { left: -60px; transform: scaleX(-1); }
+          100% { left: -60px; transform: scaleX(1); }
+        }
+        .running-kitty-sprite {
+          animation: kittyRunLoop 20s linear infinite;
+        }
+
+        /* Kitty Cat Running Back & Forth in Opposite Direction */
+        @keyframes catRunLoop {
+          0% { left: calc(100vw + 60px); transform: scaleX(-1); }
+          47.5% { left: -60px; transform: scaleX(-1); }
+          50% { left: -60px; transform: scaleX(1); }
+          97.5% { left: calc(100vw + 60px); transform: scaleX(1); }
+          100% { left: calc(100vw + 60px); transform: scaleX(-1); }
+        }
+        .running-cat-sprite {
+          animation: catRunLoop 24s linear infinite;
+        }
+
         @media (max-width: 992px) {
           .desktop-side-decoration {
             display: none !important;
@@ -687,6 +852,10 @@ export default function KittyChat() {
       <div className="bg-float-item" style={{ left: "70%", animationDuration: "8s", animationDelay: "1s" }}>💖</div>
       <div className="bg-float-item" style={{ left: "85%", animationDuration: "11s", animationDelay: "3s" }}>🎀</div>
       <div className="bg-float-item" style={{ left: "48%", animationDuration: "10s", animationDelay: "4s" }}>🐾</div>
+
+      {/* BACKGROUND RUNNING ANIMATION: Hello Kitty & Cat running around */}
+      {RUNNING_HELLO_KITTY()}
+      {RUNNING_CAT()}
 
       {/* LAPTOP / DESKTOP LEFT SIDE ANIMATED DECORATION */}
       <div
@@ -767,6 +936,59 @@ export default function KittyChat() {
           💖 Sweet & Bubbly 💖
         </div>
       </div>
+
+      {/* FULL-SIZE IMAGE PREVIEW MODAL */}
+      {previewImageModal && (
+        <div
+          onClick={() => setPreviewImageModal(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.82)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            cursor: "zoom-out",
+          }}
+        >
+          <div style={{ position: "relative", maxWidth: "90%", maxHeight: "90%" }}>
+            <img
+              src={previewImageModal}
+              alt="Preview"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "85vh",
+                borderRadius: 20,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+              }}
+            />
+            <button
+              onClick={() => setPreviewImageModal(null)}
+              style={{
+                position: "absolute",
+                top: -14,
+                right: -14,
+                background: "#E85C8A",
+                color: "#fff",
+                border: "2px solid #fff",
+                borderRadius: "50%",
+                width: 32,
+                height: 32,
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* AUTH SCREEN */}
       {screen !== "chat" ? (
@@ -1126,18 +1348,22 @@ export default function KittyChat() {
             </div>
           )}
 
-          {/* How to Chat Instructions */}
+          {/* Lovely Rotating Quote Banner (Changes every 30 seconds) */}
           <div
+            className="lovely-quote-banner"
+            key={lovelyQuoteIndex}
             style={{
               background: "#FFF5F8",
               borderBottom: "1px dashed #F6CEFC",
-              padding: "6px 14px",
-              fontSize: 11,
-              color: "#A46682",
+              padding: "7px 14px",
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: "#B4577A",
               textAlign: "center",
+              letterSpacing: "0.2px",
             }}
           >
-            💡 Open a <strong>2nd browser tab/window</strong> with a 2nd email to test multi-user chat!
+            {LOVELY_MESSAGES[lovelyQuoteIndex]}
           </div>
 
           {/* Chat Messages Feed */}
@@ -1169,7 +1395,7 @@ export default function KittyChat() {
                     : `No messages with ${activeTargetUserObj?.username || activeTarget} yet!`}
                 </div>
                 <div style={{ fontSize: 12.5, marginTop: 4 }}>
-                  Type a message below to start talking! ✨🐾
+                  Type a message or send an image below! 📷✨🐾
                 </div>
               </div>
             ) : (
@@ -1181,7 +1407,7 @@ export default function KittyChat() {
                     className="msg-bubble-animated"
                     style={{
                       alignSelf: isMe ? "flex-end" : "flex-start",
-                      maxWidth: "80%",
+                      maxWidth: "82%",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: isMe ? "flex-end" : "flex-start",
@@ -1220,6 +1446,24 @@ export default function KittyChat() {
                         wordBreak: "break-word",
                       }}
                     >
+                      {/* Image Attachment Rendering */}
+                      {m.image && (
+                        <div style={{ marginBottom: m.content ? 8 : 0 }}>
+                          <img
+                            src={m.image}
+                            alt="Attachment"
+                            onClick={() => setPreviewImageModal(m.image)}
+                            style={{
+                              maxWidth: "100%",
+                              maxHeight: 240,
+                              borderRadius: 14,
+                              display: "block",
+                              cursor: "zoom-in",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                            }}
+                          />
+                        </div>
+                      )}
                       {m.content}
                     </div>
                     <div
@@ -1238,9 +1482,80 @@ export default function KittyChat() {
             )}
           </div>
 
+          {/* Image Selection Preview Banner above Input Bar */}
+          {selectedImage && (
+            <div
+              style={{
+                padding: "8px 16px",
+                background: "#FFE6EE",
+                borderTop: "2px solid #FBEBF1",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <img
+                  src={selectedImage}
+                  alt="Selected"
+                  style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: "2px solid #E85C8A" }}
+                />
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#4A3B47" }}>
+                  📷 Image attached & ready to send
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedImage(null)}
+                style={{
+                  border: "none",
+                  background: "#D9436A",
+                  color: "#fff",
+                  borderRadius: "50%",
+                  width: 24,
+                  height: 24,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Input Bar */}
           <div style={{ padding: 14, background: "#FFFFFF", borderTop: "2px solid #FBEBF1" }}>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {/* Hidden File Input for Image Upload */}
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleImageFileSelect}
+                style={{ display: "none" }}
+              />
+
+              {/* Image Picker Button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                title="Send an Image"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  border: "2px solid #F6D9E4",
+                  background: "#FFF0F5",
+                  fontSize: 18,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                📷
+              </button>
+
               <input
                 style={{
                   flex: 1,
@@ -1262,6 +1577,7 @@ export default function KittyChat() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
               />
+
               <button
                 onClick={send}
                 style={{
