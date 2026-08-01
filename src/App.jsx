@@ -1,7 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 
-const BOW = (size = 20, color = "#E85C8A") => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+// Hello Kitty Bow SVG with animation support
+const BOW = (size = 24, color = "#E85C8A") => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    className="kitty-bow-animated"
+    style={{ display: "inline-block", verticalAlign: "middle" }}
+  >
     <path
       d="M12 12C12 12 9 6 4 6C2 6 1 8 1 9.5C1 11.5 3 12 4 12C3 12 1 12.5 1 14.5C1 16 2 18 4 18C9 18 12 12 12 12Z"
       fill={color}
@@ -10,30 +18,57 @@ const BOW = (size = 20, color = "#E85C8A") => (
       d="M12 12C12 12 15 6 20 6C22 6 23 8 23 9.5C23 11.5 21 12 20 12C21 12 23 12.5 23 14.5C23 16 22 18 20 18C15 18 12 12 12 12Z"
       fill={color}
     />
-    <circle cx="12" cy="12" r="2.4" fill={color} />
+    <circle cx="12" cy="12" r="2.6" fill="#FFF0F5" stroke={color} strokeWidth="1.2" />
+  </svg>
+);
+
+// Hello Kitty Face Avatar SVG
+const HELLO_KITTY_AVATAR = (size = 36) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    fill="none"
+    className="kitty-head-bounce"
+  >
+    {/* Ears */}
+    <path d="M 22 36 L 12 15 L 36 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
+    <path d="M 78 36 L 88 15 L 64 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
+    {/* Inner Ear pink details */}
+    <path d="M 23 34 L 17 21 L 32 26 Z" fill="#FFB7CE" />
+    <path d="M 77 34 L 83 21 L 68 26 Z" fill="#FFB7CE" />
+    {/* Head shape */}
+    <ellipse cx="50" cy="55" rx="42" ry="34" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" />
+    {/* Eyes */}
+    <ellipse cx="32" cy="54" rx="4" ry="6" fill="#4A3B47" />
+    <ellipse cx="68" cy="54" rx="4" ry="6" fill="#4A3B47" />
+    {/* Nose */}
+    <ellipse cx="50" cy="61" rx="4.5" ry="3.5" fill="#FFD166" stroke="#4A3B47" strokeWidth="1.5" />
+    {/* Whiskers */}
+    <path d="M 12 50 L 2 48 M 10 56 L 0 56 M 12 62 L 2 64" stroke="#4A3B47" strokeWidth="3.5" strokeLinecap="round" />
+    <path d="M 88 50 L 98 48 M 90 56 L 100 56 M 88 62 L 98 64" stroke="#4A3B47" strokeWidth="3.5" strokeLinecap="round" />
+    {/* Bow on right ear */}
+    <g transform="translate(62, 16) scale(1.2)">
+      <path d="M12 12C12 12 9 6 4 6C2 6 1 8 1 9.5C1 11.5 3 12 4 12C3 12 1 12.5 1 14.5C1 16 2 18 4 18C9 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
+      <path d="M12 12C12 12 15 6 20 6C22 6 23 8 23 9.5C23 11.5 21 12 20 12C21 12 23 12.5 23 14.5C23 16 22 18 20 18C15 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="2.8" fill="#FFD166" stroke="#4A3B47" strokeWidth="1.5" />
+    </g>
   </svg>
 );
 
 const PawDivider = () => (
   <div style={{ display: "flex", justifyContent: "center", gap: 10, margin: "18px 0" }}>
-    {[0, 1, 2].map((i) => (
-      <div
-        key={i}
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
-          background: "#E8A9C4",
-          opacity: 0.3 + i * 0.25,
-        }}
-      />
+    {[0, 1, 2, 3].map((i) => (
+      <span key={i} className={`paw-pulse paw-pulse-${i}`} style={{ fontSize: 16 }}>
+        🐾
+      </span>
     ))}
   </div>
 );
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v2";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v2";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v2";
+const CHANNEL_NAME = "kitty_chat_broadcast_v3";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v3";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v3";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -68,6 +103,7 @@ export default function KittyChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [showUsersPanel, setShowUsersPanel] = useState(false);
+  const [resetToast, setResetToast] = useState(false);
 
   const scrollRef = useRef(null);
   const channelRef = useRef(null);
@@ -149,8 +185,10 @@ export default function KittyChat() {
         }
       } else if (type === "USERS_UPDATED") {
         setRegisteredUsers(payload || []);
-      } else if (type === "CLEAR_CHAT") {
+      } else if (type === "RESET_CHAT") {
         setMessages([]);
+        setResetToast(true);
+        setTimeout(() => setResetToast(false), 3000);
       }
     };
 
@@ -266,10 +304,13 @@ export default function KittyChat() {
     });
   };
 
-  const clearChat = () => {
+  // Reset Chat Functionality
+  const resetChat = () => {
     setMessages([]);
     saveAllMessages([]);
-    channelRef.current?.postMessage({ type: "CLEAR_CHAT" });
+    channelRef.current?.postMessage({ type: "RESET_CHAT" });
+    setResetToast(true);
+    setTimeout(() => setResetToast(false), 3000);
   };
 
   const formatTime = (ts) => {
@@ -283,7 +324,6 @@ export default function KittyChat() {
     } else {
       const myEmail = email.toLowerCase();
       const targetEmail = activeTarget.toLowerCase();
-      // Message between me and target user
       return (
         (m.senderEmail === myEmail && m.recipientTarget === targetEmail) ||
         (m.senderEmail === targetEmail && m.recipientTarget === myEmail)
@@ -291,7 +331,6 @@ export default function KittyChat() {
     }
   });
 
-  // Calculate unread count per user target
   const getUnreadCount = (targetEmail) => {
     const myEmail = email.toLowerCase();
     return messages.filter(
@@ -320,13 +359,15 @@ export default function KittyChat() {
     page: {
       minHeight: "100vh",
       width: "100%",
-      background: "linear-gradient(180deg, #FFF8FB 0%, #FDEDF3 100%)",
+      background: "linear-gradient(180deg, #FFF0F5 0%, #FCE4EC 50%, #FDEDF3 100%)",
       fontFamily: "'Quicksand', sans-serif",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       padding: 24,
       boxSizing: "border-box",
+      position: "relative",
+      overflow: "hidden",
     },
     card: {
       width: "100%",
@@ -336,6 +377,7 @@ export default function KittyChat() {
       boxShadow: "0 20px 50px -12px rgba(232,92,138,0.25)",
       padding: "36px 32px",
       boxSizing: "border-box",
+      zIndex: 2,
     },
     title: {
       fontFamily: "'Fredoka', sans-serif",
@@ -394,29 +436,79 @@ export default function KittyChat() {
           @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600&display=swap');
           input:focus { border-color: #E85C8A !important; }
           button:active { transform: scale(0.98); }
+
+          /* Hello Kitty Animations */
+          .kitty-head-bounce {
+            animation: kittyBounce 3s ease-in-out infinite;
+          }
+          @keyframes kittyBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+          }
+
+          .kitty-bow-animated {
+            animation: bowPulse 2.5s ease-in-out infinite;
+          }
+          @keyframes bowPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            30% { transform: scale(1.15) rotate(-6deg); }
+            60% { transform: scale(1.15) rotate(6deg); }
+          }
+
+          .paw-pulse { display: inline-block; animation: pawFade 2s infinite ease-in-out; }
+          .paw-pulse-0 { animation-delay: 0s; }
+          .paw-pulse-1 { animation-delay: 0.3s; }
+          .paw-pulse-2 { animation-delay: 0.6s; }
+          .paw-pulse-3 { animation-delay: 0.9s; }
+          @keyframes pawFade {
+            0%, 100% { opacity: 0.3; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.2); }
+          }
+
+          /* Floating Background Bows & Sparkles */
+          .bg-float-item {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.25;
+            animation: floatUp 8s linear infinite;
+          }
+          @keyframes floatUp {
+            0% { transform: translateY(105vh) rotate(0deg); opacity: 0; }
+            20% { opacity: 0.35; }
+            80% { opacity: 0.35; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+          }
         `}</style>
+
+        {/* Floating animated Hello Kitty Bows in background */}
+        <div className="bg-float-item" style={{ left: "10%", animationDuration: "9s" }}>🎀</div>
+        <div className="bg-float-item" style={{ left: "25%", animationDuration: "12s", animationDelay: "2s" }}>✨</div>
+        <div className="bg-float-item" style={{ left: "70%", animationDuration: "8s", animationDelay: "1s" }}>💖</div>
+        <div className="bg-float-item" style={{ left: "85%", animationDuration: "11s", animationDelay: "3s" }}>🎀</div>
+        <div className="bg-float-item" style={{ left: "48%", animationDuration: "10s", animationDelay: "4s" }}>🐾</div>
+
         <div style={styles.card}>
-          <div style={{ display: "flex", justifyContent: "center" }}>{BOW(44)}</div>
-          <div style={styles.title}>{screen === "auth" ? "Kitty Chat" : "Almost there!"}</div>
+          <div style={{ display: "flex", justifyContent: "center" }}>{HELLO_KITTY_AVATAR(68)}</div>
+          <div style={styles.title}>{screen === "auth" ? "Hello Kitty Chat 🎀" : "Almost there!"}</div>
           <div style={styles.subtitle}>
             {screen === "auth"
-              ? "Register or sign in with email to chat with friends"
-              : "Pick your username to complete registration"}
+              ? "Enter your name or email to join the chat"
+              : "Pick your username to finish registration"}
           </div>
 
           {screen === "auth" && (
             <>
               <input
                 style={styles.input}
-                type="email"
-                placeholder="you@example.com"
+                type="text"
+                placeholder="Your email or name..."
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleContinue()}
               />
               {error && <div style={styles.error}>{error}</div>}
               <button style={styles.button} onClick={handleContinue} disabled={checking}>
-                {checking ? "Checking..." : "Continue"}
+                {checking ? "Checking..." : "Continue ✨"}
               </button>
             </>
           )}
@@ -444,7 +536,7 @@ export default function KittyChat() {
               />
               {error && <div style={styles.error}>{error}</div>}
               <button style={styles.button} onClick={handleCreateAccount} disabled={checking}>
-                {checking ? "Registering..." : "Register & Chat"}
+                {checking ? "Registering..." : "Join Chat 🎀"}
               </button>
             </>
           )}
@@ -462,6 +554,41 @@ export default function KittyChat() {
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #F0C4D6; border-radius: 10px; }
         .user-item:hover { background: #FFF0F5 !important; }
+
+        .kitty-head-bounce {
+          animation: kittyBounce 3s ease-in-out infinite;
+        }
+        @keyframes kittyBounce {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-4px) rotate(2deg); }
+        }
+
+        .kitty-bow-animated {
+          animation: bowPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes bowPulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          30% { transform: scale(1.15) rotate(-6deg); }
+          60% { transform: scale(1.15) rotate(6deg); }
+        }
+
+        /* Message Bubble Entrance Animation */
+        .msg-bubble-animated {
+          animation: msgPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes msgPop {
+          0% { opacity: 0; transform: scale(0.92) translateY(8px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Toast animation */
+        .reset-toast-animated {
+          animation: toastSlide 0.3s ease-out;
+        }
+        @keyframes toastSlide {
+          0% { transform: translateY(-20px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
       `}</style>
       <div
         style={{
@@ -473,8 +600,36 @@ export default function KittyChat() {
           height: "100vh",
           background: "#FFFFFF",
           boxShadow: "0 0 40px rgba(232, 92, 138, 0.15)",
+          position: "relative",
         }}
       >
+        {/* Reset Confirmation Toast Banner */}
+        {resetToast && (
+          <div
+            className="reset-toast-animated"
+            style={{
+              position: "absolute",
+              top: 14,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "linear-gradient(135deg, #FF8FAB, #E85C8A)",
+              color: "#FFFFFF",
+              padding: "8px 18px",
+              borderRadius: 20,
+              fontSize: 13,
+              fontFamily: "'Fredoka', sans-serif",
+              fontWeight: 600,
+              boxShadow: "0 6px 18px rgba(232,92,138,0.4)",
+              zIndex: 999,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span>🧹✨</span> Chat has been reset!
+          </div>
+        )}
+
         {/* Main Header */}
         <div
           style={{
@@ -487,19 +642,41 @@ export default function KittyChat() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {BOW(26)}
+            {HELLO_KITTY_AVATAR(36)}
             <div>
               <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 16, color: "#4A3B47", fontWeight: 600 }}>
                 {activeTarget === "global"
-                  ? "🎀 Everyone (Global)"
-                  : `💬 1-on-1: ${activeTargetUserObj?.username || activeTarget}`}
+                  ? "Hello Kitty Chat 🎀"
+                  : `💬 Chat with ${activeTargetUserObj?.username || activeTarget}`}
               </div>
               <div style={{ fontSize: 12, color: "#C79AB0", display: "flex", alignItems: "center", gap: 6 }}>
-                <span>Signed in as <strong>{username}</strong></span>
+                <span>hi, <strong>{username}</strong> ✨</span>
               </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
+            {/* RESET CHAT BUTTON */}
+            <button
+              onClick={resetChat}
+              title="Reset all chat messages"
+              style={{
+                border: "none",
+                background: "#FFE6EE",
+                color: "#D9436A",
+                borderRadius: 12,
+                padding: "8px 12px",
+                fontSize: 12,
+                fontFamily: "'Fredoka', sans-serif",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                boxShadow: "0 2px 6px rgba(217,67,106,0.15)",
+              }}
+            >
+              🔄 Reset Chat
+            </button>
             <button
               onClick={() => setShowUsersPanel(!showUsersPanel)}
               style={{
@@ -507,24 +684,21 @@ export default function KittyChat() {
                 background: showUsersPanel ? "#E85C8A" : "#FBEEF3",
                 color: showUsersPanel ? "#FFFFFF" : "#B4577A",
                 borderRadius: 12,
-                padding: "8px 12px",
+                padding: "8px 10px",
                 fontSize: 12,
                 fontFamily: "'Quicksand', sans-serif",
                 fontWeight: 600,
                 cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
               }}
             >
-              👥 Registered ({registeredUsers.length})
+              👥 ({registeredUsers.length})
             </button>
             <button
               onClick={handleLogout}
               style={{
                 border: "none",
                 background: "#FFF0F4",
-                color: "#D9436A",
+                color: "#B4577A",
                 borderRadius: 12,
                 padding: "8px 10px",
                 fontSize: 12,
@@ -538,7 +712,7 @@ export default function KittyChat() {
           </div>
         </div>
 
-        {/* Registered Users & Navigation Bar / Panel */}
+        {/* Registered Users Navigation Bar */}
         <div
           style={{
             background: "#FFF8FA",
@@ -546,8 +720,8 @@ export default function KittyChat() {
             padding: "10px 14px",
           }}
         >
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B4577A", marginBottom: 8 }}>
-            SELECT WHO TO TALK TO:
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B4577A", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+            {BOW(16)} SELECT ROOM OR FRIEND:
           </div>
           <div
             style={{
@@ -649,7 +823,7 @@ export default function KittyChat() {
               background: "#FFFBFD",
               borderBottom: "2px solid #FBEBF1",
               padding: 14,
-              maxHeight: 200,
+              maxHeight: 220,
               overflowY: "auto",
             }}
           >
@@ -658,18 +832,19 @@ export default function KittyChat() {
                 All Registered Users ({registeredUsers.length})
               </span>
               <button
-                onClick={clearChat}
+                onClick={resetChat}
                 style={{
                   border: "none",
-                  background: "transparent",
+                  background: "#FFE6EE",
                   color: "#D9436A",
                   fontSize: 11,
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  borderRadius: 10,
+                  padding: "4px 8px",
                   cursor: "pointer",
-                  textDecoration: "underline",
                 }}
               >
-                Clear all chat history
+                🔄 Reset Chat History
               </button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -742,7 +917,7 @@ export default function KittyChat() {
             textAlign: "center",
           }}
         >
-          💡 Open a <strong>new browser window/tab</strong> with a different email to register another user!
+          💡 Open a <strong>new browser window/tab</strong> with another name to chat live with yourself!
         </div>
 
         {/* Chat Messages Feed */}
@@ -767,14 +942,14 @@ export default function KittyChat() {
                 fontSize: 14,
               }}
             >
-              {BOW(36, "#F0C4D6")}
+              {HELLO_KITTY_AVATAR(50)}
               <div style={{ marginTop: 12, fontFamily: "'Fredoka', sans-serif", fontSize: 16 }}>
                 {activeTarget === "global"
-                  ? "Welcome to Everyone Chat! 🎀"
+                  ? "Welcome to Hello Kitty Chat! 🎀"
                   : `No messages with ${activeTargetUserObj?.username || activeTarget} yet!`}
               </div>
               <div style={{ fontSize: 12.5, marginTop: 4 }}>
-                Type a message below to start talking! 🐾
+                Type a message below to start talking! ✨🐾
               </div>
             </div>
           ) : (
@@ -783,6 +958,7 @@ export default function KittyChat() {
               return (
                 <div
                   key={m.id}
+                  className="msg-bubble-animated"
                   style={{
                     alignSelf: isMe ? "flex-end" : "flex-start",
                     maxWidth: "80%",
@@ -799,9 +975,12 @@ export default function KittyChat() {
                         color: "#B4577A",
                         marginBottom: 3,
                         paddingLeft: 4,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
                       }}
                     >
-                      🎀 {m.senderUsername}
+                      {BOW(14)} {m.senderUsername}
                     </div>
                   )}
                   <div
@@ -856,8 +1035,8 @@ export default function KittyChat() {
               }}
               placeholder={
                 activeTarget === "global"
-                  ? "Message Everyone..."
-                  : `Message ${activeTargetUserObj?.username || activeTarget}...`
+                  ? "Message Everyone... 🎀"
+                  : `Message ${activeTargetUserObj?.username || activeTarget}... ✨`
               }
               value={input}
               onChange={(e) => setInput(e.target.value)}
