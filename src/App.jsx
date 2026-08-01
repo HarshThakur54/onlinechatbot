@@ -112,10 +112,10 @@ const PawDivider = () => (
   </div>
 );
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v6";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v6";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v6";
-const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v6";
+const CHANNEL_NAME = "kitty_chat_broadcast_v7";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v7";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v7";
+const ACTIVE_SESSION_KEY = "kitty_chat_active_session_v7";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -148,7 +148,7 @@ export default function KittyChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [showUsersPanel, setShowUsersPanel] = useState(false);
-  const [resetToast, setResetToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const scrollRef = useRef(null);
   const channelRef = useRef(null);
@@ -161,6 +161,11 @@ export default function KittyChat() {
   };
 
   const username = getDisplayName(email);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 3000);
+  };
 
   // Load registered users from storage
   const loadRegisteredUsers = () => {
@@ -270,14 +275,12 @@ export default function KittyChat() {
           const incomingEmail = payload.email.toLowerCase();
           const incomingName = payload.username || getDisplayName(incomingEmail);
 
-          // Update online status map
           setOnlinePings((prev) => {
             const next = new Map(prev);
             next.set(incomingEmail, Date.now());
             return next;
           });
 
-          // Ensure incoming user is registered in local state
           setRegisteredUsers((prev) => {
             if (!prev.some((u) => u.email === incomingEmail)) {
               const updated = [
@@ -290,32 +293,51 @@ export default function KittyChat() {
             return prev;
           });
 
-          // If this is a newly arrived user, reply with my ping so both sides immediately know each other are online!
           if (payload.isInitial) {
             sendMyPing();
           }
         }
       } else if (type === "USERS_UPDATED") {
         setRegisteredUsers(payload || []);
-      } else if (type === "RESET_CHAT") {
+      } else if (type === "RESET_TARGET_CHAT") {
+        const { target, user } = payload || {};
+        setMessages((prev) => {
+          let updated;
+          if (target === "global") {
+            updated = prev.filter((m) => m.recipientTarget && m.recipientTarget !== "global");
+          } else if (target && user) {
+            const tLow = target.toLowerCase();
+            const uLow = user.toLowerCase();
+            updated = prev.filter(
+              (m) =>
+                !(
+                  (m.senderEmail === uLow && m.recipientTarget === tLow) ||
+                  (m.senderEmail === tLow && m.recipientTarget === uLow)
+                )
+            );
+          } else {
+            updated = prev;
+          }
+          saveAllMessages(updated);
+          return updated;
+        });
+        showToast("🧹 Chat history cleared for active room");
+      } else if (type === "RESET_ALL_CHATS") {
         setMessages([]);
-        setResetToast(true);
-        setTimeout(() => setResetToast(false), 3000);
+        saveAllMessages([]);
+        showToast("🧹 ALL chat history cleared");
       }
     };
 
-    // Announce presence immediately on load/login
     if (email) {
       channel.postMessage({
         type: "PRESENCE_PING",
         payload: { email: email.toLowerCase(), username: getDisplayName(email), isInitial: true },
       });
-      // Broadcast registered users list
       const currentList = loadRegisteredUsers();
       channel.postMessage({ type: "USERS_UPDATED", payload: currentList });
     }
 
-    // Periodic Heartbeat every 1.5 seconds
     const interval = setInterval(() => {
       sendMyPing();
       setOnlinePings((prev) => {
@@ -361,7 +383,6 @@ export default function KittyChat() {
     setMessages(loadAllMessages());
     setScreen("chat");
 
-    // Instantly notify all existing tabs that a new user came live!
     channelRef.current?.postMessage({
       type: "PRESENCE_PING",
       payload: { email: lowEmail, username: displayName, isInitial: true },
@@ -402,12 +423,45 @@ export default function KittyChat() {
     });
   };
 
-  const resetChat = () => {
+  // Reset ONLY Current Active Chat (Group room OR active 1-on-1 personal chat)
+  const resetActiveChat = () => {
+    const myEmail = email.toLowerCase();
+    const target = activeTarget.toLowerCase();
+
+    setMessages((prev) => {
+      let updated;
+      if (target === "global") {
+        // Clear group chat only
+        updated = prev.filter((m) => m.recipientTarget && m.recipientTarget !== "global");
+      } else {
+        // Clear 1-on-1 personal chat with active target only
+        updated = prev.filter(
+          (m) =>
+            !(
+              (m.senderEmail === myEmail && m.recipientTarget === target) ||
+              (m.senderEmail === target && m.recipientTarget === myEmail)
+            )
+        );
+      }
+      saveAllMessages(updated);
+      return updated;
+    });
+
+    channelRef.current?.postMessage({
+      type: "RESET_TARGET_CHAT",
+      payload: { target, user: myEmail },
+    });
+
+    const roomLabel = target === "global" ? "Group Chat" : `Chat with ${activeTargetUserObj?.username || target}`;
+    showToast(`🧹 ${roomLabel} Reset!`);
+  };
+
+  // Reset ALL Chats Everywhere (Group + All Personal DMs)
+  const resetAllChats = () => {
     setMessages([]);
     saveAllMessages([]);
-    channelRef.current?.postMessage({ type: "RESET_CHAT" });
-    setResetToast(true);
-    setTimeout(() => setResetToast(false), 3000);
+    channelRef.current?.postMessage({ type: "RESET_ALL_CHATS" });
+    showToast("🧹 ALL Chats & DMs Reset!");
   };
 
   const formatTime = (ts) => {
@@ -620,7 +674,6 @@ export default function KittyChat() {
         }
 
         /* RESPONSIVE LAYOUT RULES */
-        /* On screens under 992px (phones & tablets), hide laptop side animations */
         @media (max-width: 992px) {
           .desktop-side-decoration {
             display: none !important;
@@ -754,7 +807,7 @@ export default function KittyChat() {
           }}
         >
           {/* Reset Confirmation Toast Banner */}
-          {resetToast && (
+          {toastMessage && (
             <div
               className="reset-toast-animated"
               style={{
@@ -776,7 +829,7 @@ export default function KittyChat() {
                 gap: 6,
               }}
             >
-              <span>🧹✨</span> Chat has been reset!
+              {toastMessage}
             </div>
           )}
 
@@ -805,10 +858,10 @@ export default function KittyChat() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
-              {/* RESET CHAT BUTTON */}
+              {/* TARGETED RESET CHAT BUTTON */}
               <button
-                onClick={resetChat}
-                title="Reset all chat messages"
+                onClick={resetActiveChat}
+                title={activeTarget === "global" ? "Reset Group Chat" : `Reset Personal Chat with ${activeTargetUserObj?.username || activeTarget}`}
                 style={{
                   border: "none",
                   background: "#FFE6EE",
@@ -825,7 +878,7 @@ export default function KittyChat() {
                   boxShadow: "0 2px 6px rgba(217,67,106,0.15)",
                 }}
               >
-                🔄 Reset Chat
+                🔄 {activeTarget === "global" ? "Clear Group Chat" : `Clear Chat (${activeTargetUserObj?.username || activeTarget})`}
               </button>
               <button
                 onClick={() => setShowUsersPanel(!showUsersPanel)}
@@ -973,29 +1026,46 @@ export default function KittyChat() {
                 background: "#FFFBFD",
                 borderBottom: "2px solid #FBEBF1",
                 padding: 14,
-                maxHeight: 220,
+                maxHeight: 250,
                 overflowY: "auto",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#4A3B47" }}>
-                  All Registered Users ({registeredUsers.length})
+                  Registered Users ({registeredUsers.length})
                 </span>
-                <button
-                  onClick={resetChat}
-                  style={{
-                    border: "none",
-                    background: "#FFE6EE",
-                    color: "#D9436A",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    borderRadius: 10,
-                    padding: "4px 8px",
-                    cursor: "pointer",
-                  }}
-                >
-                  🔄 Reset Chat History
-                </button>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    onClick={resetActiveChat}
+                    style={{
+                      border: "none",
+                      background: "#FFE6EE",
+                      color: "#D9436A",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      borderRadius: 10,
+                      padding: "4px 8px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🔄 Clear Active Chat
+                  </button>
+                  <button
+                    onClick={resetAllChats}
+                    style={{
+                      border: "none",
+                      background: "#FFF0F4",
+                      color: "#B4577A",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      borderRadius: 10,
+                      padding: "4px 8px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🧹 Clear ALL Chats & DMs
+                  </button>
+                </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {registeredUsers.map((u) => {
