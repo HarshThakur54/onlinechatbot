@@ -378,7 +378,7 @@ export default function KittyChat() {
 
   const validName = (v) => Boolean(v && v.trim().length > 0);
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setError("");
     const trimmed = name.trim();
     if (!validName(trimmed)) {
@@ -388,20 +388,19 @@ export default function KittyChat() {
 
     const myNameKey = trimmed.toLowerCase();
 
-    try {
-      await setDoc(doc(db, "users", myNameKey), {
-        name: trimmed,
-        registeredAt: Date.now(),
-        lastActive: Date.now(),
-      }, { merge: true });
+    // Instantly transition screen to chat
+    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ name: trimmed }));
+    setName(trimmed);
+    setScreen("chat");
 
-      localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ name: trimmed }));
-      setName(trimmed);
-      setScreen("chat");
-    } catch (e) {
-      console.error("Login failed", e);
-      setError("Connection failed. Please try again.");
-    }
+    // Sync user record to Firestore in background
+    setDoc(doc(db, "users", myNameKey), {
+      name: trimmed,
+      registeredAt: Date.now(),
+      lastActive: Date.now(),
+    }, { merge: true }).catch((e) => {
+      console.error("Background presence registration error", e);
+    });
   };
 
   const handleLogout = () => {
