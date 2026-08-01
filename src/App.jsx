@@ -56,6 +56,52 @@ const HELLO_KITTY_AVATAR = (size = 36) => (
   </svg>
 );
 
+// Large Hello Kitty Mascot SVG for Laptop Side Panels
+const HELLO_KITTY_MASCOT = ({ wave = false }) => (
+  <svg
+    width="160"
+    height="160"
+    viewBox="0 0 120 120"
+    fill="none"
+    className={wave ? "kitty-waving-mascot" : "kitty-floating-mascot"}
+  >
+    {/* Body */}
+    <ellipse cx="60" cy="95" rx="30" ry="20" fill="#E85C8A" stroke="#4A3B47" strokeWidth="4" />
+    <path d="M 45 80 L 35 105 M 75 80 L 85 105" stroke="#4A3B47" strokeWidth="4" strokeLinecap="round" />
+    {/* Feet */}
+    <ellipse cx="44" cy="110" rx="10" ry="6" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="3" />
+    <ellipse cx="76" cy="110" rx="10" ry="6" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="3" />
+    {/* Waving Paw */}
+    {wave && (
+      <g className="waving-hand">
+        <ellipse cx="25" cy="78" rx="8" ry="12" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="3" />
+        <circle cx="23" cy="72" r="2" fill="#FF8FAB" />
+      </g>
+    )}
+    {/* Ears */}
+    <path d="M 28 36 L 16 12 L 44 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
+    <path d="M 92 36 L 104 12 L 76 24 Z" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" strokeLinejoin="round" />
+    <path d="M 29 34 L 21 18 L 39 26 Z" fill="#FFB7CE" />
+    <path d="M 91 34 L 99 18 L 81 26 Z" fill="#FFB7CE" />
+    {/* Head */}
+    <ellipse cx="60" cy="55" rx="46" ry="36" fill="#FFFFFF" stroke="#4A3B47" strokeWidth="4" />
+    {/* Eyes */}
+    <ellipse cx="40" cy="54" rx="4.5" ry="7" fill="#4A3B47" />
+    <ellipse cx="80" cy="54" rx="4.5" ry="7" fill="#4A3B47" />
+    {/* Nose */}
+    <ellipse cx="60" cy="62" rx="5" ry="4" fill="#FFD166" stroke="#4A3B47" strokeWidth="1.5" />
+    {/* Whiskers */}
+    <path d="M 18 50 L 6 48 M 16 56 L 4 56 M 18 62 L 6 64" stroke="#4A3B47" strokeWidth="4" strokeLinecap="round" />
+    <path d="M 102 50 L 114 48 M 104 56 L 116 56 M 102 62 L 114 64" stroke="#4A3B47" strokeWidth="4" strokeLinecap="round" />
+    {/* Large Bow */}
+    <g transform="translate(74, 14) scale(1.5)">
+      <path d="M12 12C12 12 9 6 4 6C2 6 1 8 1 9.5C1 11.5 3 12 4 12C3 12 1 12.5 1 14.5C1 16 2 18 4 18C15 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
+      <path d="M12 12C12 12 15 6 20 6C22 6 23 8 23 9.5C23 11.5 21 12 20 12C21 12 23 12.5 23 14.5C23 16 22 18 20 18C15 18 12 12 12 12Z" fill="#E85C8A" stroke="#4A3B47" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="3" fill="#FFD166" stroke="#4A3B47" strokeWidth="1.5" />
+    </g>
+  </svg>
+);
+
 const PawDivider = () => (
   <div style={{ display: "flex", justifyContent: "center", gap: 10, margin: "18px 0" }}>
     {[0, 1, 2, 3].map((i) => (
@@ -107,7 +153,7 @@ export default function KittyChat() {
   const scrollRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Derive user display name from email (e.g. "alice@example.com" -> "alice")
+  // Derive user display name from email
   const getDisplayName = (emailStr) => {
     if (!emailStr) return "";
     const parts = emailStr.split("@");
@@ -170,7 +216,6 @@ export default function KittyChat() {
     setRegisteredUsers(loadRegisteredUsers());
     setMessages(loadAllMessages());
 
-    // Auto-login if session exists
     try {
       const savedSession = localStorage.getItem(ACTIVE_SESSION_KEY);
       if (savedSession) {
@@ -196,7 +241,7 @@ export default function KittyChat() {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // BroadcastChannel for Real-time Messaging & Presence & User Registry Sync
+  // BroadcastChannel for Real-time Messaging & Presence
   useEffect(() => {
     const channel = new BroadcastChannel(CHANNEL_NAME);
     channelRef.current = channel;
@@ -235,7 +280,6 @@ export default function KittyChat() {
           payload: { email: email.toLowerCase(), username: getDisplayName(email) },
         });
       }
-      // Prune inactive pings (> 6 sec)
       setOnlinePings((prev) => {
         const now = Date.now();
         const next = new Map();
@@ -256,7 +300,6 @@ export default function KittyChat() {
 
   const validEmail = (v) => Boolean(v && v.trim().length > 0);
 
-  // Single-Step Login with Email Only
   const handleLogin = () => {
     setError("");
     const trimmed = email.trim();
@@ -298,7 +341,7 @@ export default function KittyChat() {
       id: Date.now() + "_" + Math.random().toString(36).substr(2, 9),
       senderEmail: email.toLowerCase(),
       senderUsername: username,
-      recipientTarget: activeTarget, // "global" or specific user's email
+      recipientTarget: activeTarget,
       content: text,
       timestamp: Date.now(),
     };
@@ -315,7 +358,6 @@ export default function KittyChat() {
     });
   };
 
-  // Reset Chat Functionality
   const resetChat = () => {
     setMessages([]);
     saveAllMessages([]);
@@ -328,7 +370,6 @@ export default function KittyChat() {
     return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Filter messages for current active channel/chat target
   const filteredMessages = messages.filter((m) => {
     if (activeTarget === "global") {
       return !m.recipientTarget || m.recipientTarget === "global";
@@ -375,7 +416,7 @@ export default function KittyChat() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: 24,
+      padding: "0 12px",
       boxSizing: "border-box",
       position: "relative",
       overflow: "hidden",
@@ -439,65 +480,199 @@ export default function KittyChat() {
     },
   };
 
-  // AUTH SCREEN (Single step - Email only)
-  if (screen !== "chat") {
-    return (
-      <div style={styles.page}>
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600&display=swap');
-          input:focus { border-color: #E85C8A !important; }
-          button:active { transform: scale(0.98); }
+  return (
+    <div style={styles.page}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600&display=swap');
+        input:focus { border-color: #E85C8A !important; }
+        button:active { transform: scale(0.98); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #F0C4D6; border-radius: 10px; }
+        .user-item:hover { background: #FFF0F5 !important; }
 
-          /* Hello Kitty Animations */
-          .kitty-head-bounce {
-            animation: kittyBounce 3s ease-in-out infinite;
-          }
-          @keyframes kittyBounce {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-8px) rotate(2deg); }
-          }
+        /* Hello Kitty Animations */
+        .kitty-head-bounce {
+          animation: kittyBounce 3s ease-in-out infinite;
+        }
+        @keyframes kittyBounce {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-8px) rotate(2deg); }
+        }
 
-          .kitty-bow-animated {
-            animation: bowPulse 2.5s ease-in-out infinite;
-          }
-          @keyframes bowPulse {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            30% { transform: scale(1.15) rotate(-6deg); }
-            60% { transform: scale(1.15) rotate(6deg); }
-          }
+        .kitty-bow-animated {
+          animation: bowPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes bowPulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          30% { transform: scale(1.15) rotate(-6deg); }
+          60% { transform: scale(1.15) rotate(6deg); }
+        }
 
-          .paw-pulse { display: inline-block; animation: pawFade 2s infinite ease-in-out; }
-          .paw-pulse-0 { animation-delay: 0s; }
-          .paw-pulse-1 { animation-delay: 0.3s; }
-          .paw-pulse-2 { animation-delay: 0.6s; }
-          .paw-pulse-3 { animation-delay: 0.9s; }
-          @keyframes pawFade {
-            0%, 100% { opacity: 0.3; transform: scale(0.9); }
-            50% { opacity: 1; transform: scale(1.2); }
-          }
+        /* Mascot animations for Laptop sides */
+        .kitty-waving-mascot {
+          animation: mascotWave 4s ease-in-out infinite;
+        }
+        @keyframes mascotWave {
+          0%, 100% { transform: translateY(0) rotate(-2deg); }
+          50% { transform: translateY(-12px) rotate(3deg); }
+        }
+        .waving-hand {
+          transform-origin: 25px 85px;
+          animation: handWobble 1.2s ease-in-out infinite;
+        }
+        @keyframes handWobble {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(18deg); }
+        }
 
-          /* Floating Background Bows & Sparkles */
-          .bg-float-item {
-            position: absolute;
-            pointer-events: none;
-            opacity: 0.25;
-            animation: floatUp 8s linear infinite;
-          }
-          @keyframes floatUp {
-            0% { transform: translateY(105vh) rotate(0deg); opacity: 0; }
-            20% { opacity: 0.35; }
-            80% { opacity: 0.35; }
-            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
-          }
-        `}</style>
+        .kitty-floating-mascot {
+          animation: mascotFloat 4.5s ease-in-out infinite;
+        }
+        @keyframes mascotFloat {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-14px) scale(1.03); }
+        }
 
-        {/* Floating animated Hello Kitty Bows in background */}
-        <div className="bg-float-item" style={{ left: "10%", animationDuration: "9s" }}>🎀</div>
-        <div className="bg-float-item" style={{ left: "25%", animationDuration: "12s", animationDelay: "2s" }}>✨</div>
-        <div className="bg-float-item" style={{ left: "70%", animationDuration: "8s", animationDelay: "1s" }}>💖</div>
-        <div className="bg-float-item" style={{ left: "85%", animationDuration: "11s", animationDelay: "3s" }}>🎀</div>
-        <div className="bg-float-item" style={{ left: "48%", animationDuration: "10s", animationDelay: "4s" }}>🐾</div>
+        .paw-pulse { display: inline-block; animation: pawFade 2s infinite ease-in-out; }
+        .paw-pulse-0 { animation-delay: 0s; }
+        .paw-pulse-1 { animation-delay: 0.3s; }
+        .paw-pulse-2 { animation-delay: 0.6s; }
+        .paw-pulse-3 { animation-delay: 0.9s; }
+        @keyframes pawFade {
+          0%, 100% { opacity: 0.3; transform: scale(0.9); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
 
+        /* Floating Background Bows & Sparkles */
+        .bg-float-item {
+          position: absolute;
+          pointer-events: none;
+          opacity: 0.25;
+          animation: floatUp 8s linear infinite;
+        }
+        @keyframes floatUp {
+          0% { transform: translateY(105vh) rotate(0deg); opacity: 0; }
+          20% { opacity: 0.35; }
+          80% { opacity: 0.35; }
+          100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Message Bubble Entrance Animation */
+        .msg-bubble-animated {
+          animation: msgPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes msgPop {
+          0% { opacity: 0; transform: scale(0.92) translateY(8px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Toast animation */
+        .reset-toast-animated {
+          animation: toastSlide 0.3s ease-out;
+        }
+        @keyframes toastSlide {
+          0% { transform: translateY(-20px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* RESPONSIVE LAYOUT RULES */
+        /* On screens under 992px (phones & tablets), hide laptop side animations */
+        @media (max-width: 992px) {
+          .desktop-side-decoration {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* Floating background elements */}
+      <div className="bg-float-item" style={{ left: "10%", animationDuration: "9s" }}>🎀</div>
+      <div className="bg-float-item" style={{ left: "25%", animationDuration: "12s", animationDelay: "2s" }}>✨</div>
+      <div className="bg-float-item" style={{ left: "70%", animationDuration: "8s", animationDelay: "1s" }}>💖</div>
+      <div className="bg-float-item" style={{ left: "85%", animationDuration: "11s", animationDelay: "3s" }}>🎀</div>
+      <div className="bg-float-item" style={{ left: "48%", animationDuration: "10s", animationDelay: "4s" }}>🐾</div>
+
+      {/* LAPTOP / DESKTOP LEFT SIDE ANIMATED DECORATION */}
+      <div
+        className="desktop-side-decoration"
+        style={{
+          position: "fixed",
+          left: "4%",
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          zIndex: 10,
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            background: "#FFFFFF",
+            padding: "10px 16px",
+            borderRadius: 20,
+            boxShadow: "0 8px 24px rgba(232,92,138,0.25)",
+            fontFamily: "'Fredoka', sans-serif",
+            fontSize: 14,
+            color: "#4A3B47",
+            fontWeight: 600,
+            marginBottom: 12,
+            border: "2px solid #F6D9E4",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span>Pyaru Pyaru Baatee</span> 🎀
+        </div>
+        {HELLO_KITTY_MASCOT({ wave: true })}
+        <div style={{ marginTop: 10, fontSize: 13, color: "#B4577A", fontWeight: 700 }}>
+          ✨ Hello Kitty & Friends ✨
+        </div>
+      </div>
+
+      {/* LAPTOP / DESKTOP RIGHT SIDE ANIMATED DECORATION */}
+      <div
+        className="desktop-side-decoration"
+        style={{
+          position: "fixed",
+          right: "4%",
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          zIndex: 10,
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            background: "#FFFFFF",
+            padding: "10px 16px",
+            borderRadius: 20,
+            boxShadow: "0 8px 24px rgba(232,92,138,0.25)",
+            fontFamily: "'Fredoka', sans-serif",
+            fontSize: 14,
+            color: "#4A3B47",
+            fontWeight: 600,
+            marginBottom: 12,
+            border: "2px solid #F6D9E4",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span>Let's Chat!</span> 🐾✨
+        </div>
+        {HELLO_KITTY_MASCOT({ wave: false })}
+        <div style={{ marginTop: 10, fontSize: 13, color: "#B4577A", fontWeight: 700 }}>
+          💖 Sweet & Bubbly 💖
+        </div>
+      </div>
+
+      {/* AUTH SCREEN */}
+      {screen !== "chat" ? (
         <div style={styles.card}>
           <div style={{ display: "flex", justifyContent: "center" }}>{HELLO_KITTY_AVATAR(68)}</div>
           <div style={styles.title}>Pyaru Pyaru Baatee 🎀</div>
@@ -518,526 +693,482 @@ export default function KittyChat() {
           </button>
           <PawDivider />
         </div>
-      </div>
-    );
-  }
-
-  // MAIN CHAT INTERFACE
-  return (
-    <div style={{ ...styles.page, alignItems: "stretch", padding: 0 }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600&display=swap');
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #F0C4D6; border-radius: 10px; }
-        .user-item:hover { background: #FFF0F5 !important; }
-
-        .kitty-head-bounce {
-          animation: kittyBounce 3s ease-in-out infinite;
-        }
-        @keyframes kittyBounce {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-4px) rotate(2deg); }
-        }
-
-        .kitty-bow-animated {
-          animation: bowPulse 2.5s ease-in-out infinite;
-        }
-        @keyframes bowPulse {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          30% { transform: scale(1.15) rotate(-6deg); }
-          60% { transform: scale(1.15) rotate(6deg); }
-        }
-
-        /* Message Bubble Entrance Animation */
-        .msg-bubble-animated {
-          animation: msgPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes msgPop {
-          0% { opacity: 0; transform: scale(0.92) translateY(8px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* Toast animation */
-        .reset-toast-animated {
-          animation: toastSlide 0.3s ease-out;
-        }
-        @keyframes toastSlide {
-          0% { transform: translateY(-20px); opacity: 0; }
-          100% { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
-      <div
-        style={{
-          maxWidth: 520,
-          width: "100%",
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          background: "#FFFFFF",
-          boxShadow: "0 0 40px rgba(232, 92, 138, 0.15)",
-          position: "relative",
-        }}
-      >
-        {/* Reset Confirmation Toast Banner */}
-        {resetToast && (
-          <div
-            className="reset-toast-animated"
-            style={{
-              position: "absolute",
-              top: 14,
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "linear-gradient(135deg, #FF8FAB, #E85C8A)",
-              color: "#FFFFFF",
-              padding: "8px 18px",
-              borderRadius: 20,
-              fontSize: 13,
-              fontFamily: "'Fredoka', sans-serif",
-              fontWeight: 600,
-              boxShadow: "0 6px 18px rgba(232,92,138,0.4)",
-              zIndex: 999,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <span>🧹✨</span> Chat has been reset!
-          </div>
-        )}
-
-        {/* Main Header */}
+      ) : (
+        /* MAIN CHAT CONTAINER */
         <div
           style={{
+            maxWidth: 520,
+            width: "100%",
+            margin: "0 auto",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
+            flexDirection: "column",
+            height: "100vh",
             background: "#FFFFFF",
-            borderBottom: "2px solid #FBEBF1",
+            boxShadow: "0 0 40px rgba(232, 92, 138, 0.15)",
+            position: "relative",
+            zIndex: 5,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {HELLO_KITTY_AVATAR(36)}
-            <div>
-              <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 16, color: "#4A3B47", fontWeight: 600 }}>
-                {activeTarget === "global"
-                  ? "Pyaru Pyaru Baatee 🎀"
-                  : `💬 Chat with ${activeTargetUserObj?.username || activeTarget}`}
-              </div>
-              <div style={{ fontSize: 12, color: "#C79AB0", display: "flex", alignItems: "center", gap: 6 }}>
-                <span>hi, <strong>{email}</strong> ✨</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {/* RESET CHAT BUTTON */}
-            <button
-              onClick={resetChat}
-              title="Reset all chat messages"
+          {/* Reset Confirmation Toast Banner */}
+          {resetToast && (
+            <div
+              className="reset-toast-animated"
               style={{
-                border: "none",
-                background: "#FFE6EE",
-                color: "#D9436A",
-                borderRadius: 12,
-                padding: "8px 12px",
-                fontSize: 12,
+                position: "absolute",
+                top: 14,
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "linear-gradient(135deg, #FF8FAB, #E85C8A)",
+                color: "#FFFFFF",
+                padding: "8px 18px",
+                borderRadius: 20,
+                fontSize: 13,
                 fontFamily: "'Fredoka', sans-serif",
                 fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                boxShadow: "0 2px 6px rgba(217,67,106,0.15)",
-              }}
-            >
-              🔄 Reset Chat
-            </button>
-            <button
-              onClick={() => setShowUsersPanel(!showUsersPanel)}
-              style={{
-                border: "none",
-                background: showUsersPanel ? "#E85C8A" : "#FBEEF3",
-                color: showUsersPanel ? "#FFFFFF" : "#B4577A",
-                borderRadius: 12,
-                padding: "8px 10px",
-                fontSize: 12,
-                fontFamily: "'Quicksand', sans-serif",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              👥 ({registeredUsers.length})
-            </button>
-            <button
-              onClick={handleLogout}
-              style={{
-                border: "none",
-                background: "#FFF0F4",
-                color: "#B4577A",
-                borderRadius: 12,
-                padding: "8px 10px",
-                fontSize: 12,
-                fontFamily: "'Quicksand', sans-serif",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Log out
-            </button>
-          </div>
-        </div>
-
-        {/* Registered Users Navigation Bar */}
-        <div
-          style={{
-            background: "#FFF8FA",
-            borderBottom: "2px solid #FBEBF1",
-            padding: "10px 14px",
-          }}
-        >
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B4577A", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
-            {BOW(16)} SELECT ROOM OR FRIEND:
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              overflowX: "auto",
-              paddingBottom: 4,
-            }}
-          >
-            {/* Global Room Button */}
-            <button
-              onClick={() => setActiveTarget("global")}
-              style={{
-                border: activeTarget === "global" ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
-                background: activeTarget === "global" ? "#FFE6EE" : "#FFFFFF",
-                color: "#4A3B47",
-                borderRadius: 16,
-                padding: "6px 12px",
-                fontSize: 12.5,
-                fontFamily: "'Quicksand', sans-serif",
-                fontWeight: activeTarget === "global" ? 700 : 500,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
+                boxShadow: "0 6px 18px rgba(232,92,138,0.4)",
+                zIndex: 999,
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                boxShadow: activeTarget === "global" ? "0 3px 10px rgba(232,92,138,0.2)" : "none",
               }}
             >
-              <span>🎀 Everyone</span>
-              <span style={{ fontSize: 10, background: "#E85C8A", color: "#fff", padding: "1px 6px", borderRadius: 10 }}>
-                Group
-              </span>
-            </button>
+              <span>🧹✨</span> Chat has been reset!
+            </div>
+          )}
 
-            {/* List of Registered Users */}
-            {otherRegisteredUsers.map((u) => {
-              const online = isUserOnline(u.email);
-              const unread = getUnreadCount(u.email);
-              const isSelected = activeTarget.toLowerCase() === u.email.toLowerCase();
-              return (
-                <button
-                  key={u.email}
-                  onClick={() => setActiveTarget(u.email)}
-                  style={{
-                    border: isSelected ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
-                    background: isSelected ? "#FFE6EE" : "#FFFFFF",
-                    color: "#4A3B47",
-                    borderRadius: 16,
-                    padding: "6px 12px",
-                    fontSize: 12.5,
-                    fontFamily: "'Quicksand', sans-serif",
-                    fontWeight: isSelected ? 700 : 500,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    boxShadow: isSelected ? "0 3px 10px rgba(232,92,138,0.2)" : "none",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: online ? "#2ECC71" : "#BDC3C7",
-                    }}
-                  />
-                  <span>{u.username}</span>
-                  {unread > 0 && (
-                    <span
-                      style={{
-                        background: "#D9436A",
-                        color: "#fff",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        borderRadius: "50%",
-                        width: 16,
-                        height: 16,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {unread}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Collapsible Full Registered Users Directory Panel */}
-        {showUsersPanel && (
+          {/* Main Header */}
           <div
             style={{
-              background: "#FFFBFD",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "14px 18px",
+              background: "#FFFFFF",
               borderBottom: "2px solid #FBEBF1",
-              padding: 14,
-              maxHeight: 220,
-              overflowY: "auto",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4A3B47" }}>
-                All Registered Users ({registeredUsers.length})
-              </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {HELLO_KITTY_AVATAR(36)}
+              <div>
+                <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 16, color: "#4A3B47", fontWeight: 600 }}>
+                  {activeTarget === "global"
+                    ? "Pyaru Pyaru Baatee 🎀"
+                    : `💬 Chat with ${activeTargetUserObj?.username || activeTarget}`}
+                </div>
+                <div style={{ fontSize: 12, color: "#C79AB0", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>hi, <strong>{email}</strong> ✨</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {/* RESET CHAT BUTTON */}
               <button
                 onClick={resetChat}
+                title="Reset all chat messages"
                 style={{
                   border: "none",
                   background: "#FFE6EE",
                   color: "#D9436A",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  borderRadius: 10,
-                  padding: "4px 8px",
+                  borderRadius: 12,
+                  padding: "8px 12px",
+                  fontSize: 12,
+                  fontFamily: "'Fredoka', sans-serif",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  boxShadow: "0 2px 6px rgba(217,67,106,0.15)",
+                }}
+              >
+                🔄 Reset Chat
+              </button>
+              <button
+                onClick={() => setShowUsersPanel(!showUsersPanel)}
+                style={{
+                  border: "none",
+                  background: showUsersPanel ? "#E85C8A" : "#FBEEF3",
+                  color: showUsersPanel ? "#FFFFFF" : "#B4577A",
+                  borderRadius: 12,
+                  padding: "8px 10px",
+                  fontSize: 12,
+                  fontFamily: "'Quicksand', sans-serif",
+                  fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
-                🔄 Reset Chat History
+                👥 ({registeredUsers.length})
+              </button>
+              <button
+                onClick={handleLogout}
+                style={{
+                  border: "none",
+                  background: "#FFF0F4",
+                  color: "#B4577A",
+                  borderRadius: 12,
+                  padding: "8px 10px",
+                  fontSize: 12,
+                  fontFamily: "'Quicksand', sans-serif",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Log out
               </button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {registeredUsers.map((u) => {
+          </div>
+
+          {/* Registered Users Navigation Bar */}
+          <div
+            style={{
+              background: "#FFF8FA",
+              borderBottom: "2px solid #FBEBF1",
+              padding: "10px 14px",
+            }}
+          >
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B4577A", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+              {BOW(16)} SELECT ROOM OR FRIEND:
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                overflowX: "auto",
+                paddingBottom: 4,
+              }}
+            >
+              {/* Global Room Button */}
+              <button
+                onClick={() => setActiveTarget("global")}
+                style={{
+                  border: activeTarget === "global" ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
+                  background: activeTarget === "global" ? "#FFE6EE" : "#FFFFFF",
+                  color: "#4A3B47",
+                  borderRadius: 16,
+                  padding: "6px 12px",
+                  fontSize: 12.5,
+                  fontFamily: "'Quicksand', sans-serif",
+                  fontWeight: activeTarget === "global" ? 700 : 500,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: activeTarget === "global" ? "0 3px 10px rgba(232,92,138,0.2)" : "none",
+                }}
+              >
+                <span>🎀 Everyone</span>
+                <span style={{ fontSize: 10, background: "#E85C8A", color: "#fff", padding: "1px 6px", borderRadius: 10 }}>
+                  Group
+                </span>
+              </button>
+
+              {/* List of Registered Users */}
+              {otherRegisteredUsers.map((u) => {
                 const online = isUserOnline(u.email);
-                const isMe = u.email === email.toLowerCase();
-                const avatarBg = getAvatarColor(u.username);
+                const unread = getUnreadCount(u.email);
+                const isSelected = activeTarget.toLowerCase() === u.email.toLowerCase();
                 return (
-                  <div
+                  <button
                     key={u.email}
-                    onClick={() => {
-                      if (!isMe) setActiveTarget(u.email);
-                      setShowUsersPanel(false);
-                    }}
-                    className="user-item"
+                    onClick={() => setActiveTarget(u.email)}
                     style={{
+                      border: isSelected ? "2px solid #E85C8A" : "1.5px solid #F6D9E4",
+                      background: isSelected ? "#FFE6EE" : "#FFFFFF",
+                      color: "#4A3B47",
+                      borderRadius: 16,
+                      padding: "6px 12px",
+                      fontSize: 12.5,
+                      fontFamily: "'Quicksand', sans-serif",
+                      fontWeight: isSelected ? 700 : 500,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "8px 10px",
-                      borderRadius: 12,
-                      background: activeTarget.toLowerCase() === u.email ? "#FFE6EE" : "#FFFFFF",
-                      border: "1px solid #F6D9E4",
-                      cursor: isMe ? "default" : "pointer",
+                      gap: 6,
+                      boxShadow: isSelected ? "0 3px 10px rgba(232,92,138,0.2)" : "none",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: online ? "#2ECC71" : "#BDC3C7",
+                      }}
+                    />
+                    <span>{u.username}</span>
+                    {unread > 0 && (
+                      <span
                         style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          background: avatarBg,
+                          background: "#D9436A",
                           color: "#fff",
+                          fontSize: 10,
                           fontWeight: 700,
-                          fontSize: 13,
+                          borderRadius: "50%",
+                          width: 16,
+                          height: 16,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                         }}
                       >
-                        {u.username.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#4A3B47" }}>
-                          {u.username} {isMe && "(You)"}
-                        </div>
-                        <div style={{ fontSize: 10.5, color: "#B48A9C" }}>{u.email}</div>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: online ? "#27AE60" : "#95A5A6" }}>
-                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: online ? "#27AE60" : "#BDC3C7" }} />
-                      {online ? "Online" : "Offline"}
-                    </div>
-                  </div>
+                        {unread}
+                      </span>
+                    )}
+                  </button>
                 );
               })}
             </div>
           </div>
-        )}
 
-        {/* How to Chat Instructions */}
-        <div
-          style={{
-            background: "#FFF5F8",
-            borderBottom: "1px dashed #F6CEFC",
-            padding: "6px 14px",
-            fontSize: 11,
-            color: "#A46682",
-            textAlign: "center",
-          }}
-        >
-          💡 Open a <strong>2nd browser tab/window</strong> with a 2nd email to test multi-user chat!
-        </div>
-
-        {/* Chat Messages Feed */}
-        <div
-          ref={scrollRef}
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "18px 16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-            background: "#FAF4F7",
-          }}
-        >
-          {filteredMessages.length === 0 ? (
+          {/* Collapsible Full Registered Users Directory Panel */}
+          {showUsersPanel && (
             <div
               style={{
-                textAlign: "center",
-                color: "#C79AB0",
-                marginTop: 40,
-                fontSize: 14,
+                background: "#FFFBFD",
+                borderBottom: "2px solid #FBEBF1",
+                padding: 14,
+                maxHeight: 220,
+                overflowY: "auto",
               }}
             >
-              {HELLO_KITTY_AVATAR(50)}
-              <div style={{ marginTop: 12, fontFamily: "'Fredoka', sans-serif", fontSize: 16 }}>
-                {activeTarget === "global"
-                  ? "Welcome to Pyaru Pyaru Baatee! 🎀"
-                  : `No messages with ${activeTargetUserObj?.username || activeTarget} yet!`}
-              </div>
-              <div style={{ fontSize: 12.5, marginTop: 4 }}>
-                Type a message below to start talking! ✨🐾
-              </div>
-            </div>
-          ) : (
-            filteredMessages.map((m) => {
-              const isMe = m.senderEmail === email.toLowerCase();
-              return (
-                <div
-                  key={m.id}
-                  className="msg-bubble-animated"
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#4A3B47" }}>
+                  All Registered Users ({registeredUsers.length})
+                </span>
+                <button
+                  onClick={resetChat}
                   style={{
-                    alignSelf: isMe ? "flex-end" : "flex-start",
-                    maxWidth: "80%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: isMe ? "flex-end" : "flex-start",
+                    border: "none",
+                    background: "#FFE6EE",
+                    color: "#D9436A",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    borderRadius: 10,
+                    padding: "4px 8px",
+                    cursor: "pointer",
                   }}
                 >
-                  {!isMe && (
+                  🔄 Reset Chat History
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {registeredUsers.map((u) => {
+                  const online = isUserOnline(u.email);
+                  const isMe = u.email === email.toLowerCase();
+                  const avatarBg = getAvatarColor(u.username);
+                  return (
                     <div
+                      key={u.email}
+                      onClick={() => {
+                        if (!isMe) setActiveTarget(u.email);
+                        setShowUsersPanel(false);
+                      }}
+                      className="user-item"
                       style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#B4577A",
-                        marginBottom: 3,
-                        paddingLeft: 4,
                         display: "flex",
                         alignItems: "center",
-                        gap: 4,
+                        justifyContent: "space-between",
+                        padding: "8px 10px",
+                        borderRadius: 12,
+                        background: activeTarget.toLowerCase() === u.email ? "#FFE6EE" : "#FFFFFF",
+                        border: "1px solid #F6D9E4",
+                        cursor: isMe ? "default" : "pointer",
                       }}
                     >
-                      {BOW(14)} {m.senderUsername}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "50%",
+                            background: avatarBg,
+                            color: "#fff",
+                            fontWeight: 700,
+                            fontSize: 13,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {u.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#4A3B47" }}>
+                            {u.username} {isMe && "(You)"}
+                          </div>
+                          <div style={{ fontSize: 10.5, color: "#B48A9C" }}>{u.email}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: online ? "#27AE60" : "#95A5A6" }}>
+                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: online ? "#27AE60" : "#BDC3C7" }} />
+                        {online ? "Online" : "Offline"}
+                      </div>
                     </div>
-                  )}
-                  <div
-                    style={{
-                      background: isMe
-                        ? "linear-gradient(135deg, #FF8FAB, #E85C8A)"
-                        : "#FFFFFF",
-                      color: isMe ? "#FFFFFF" : "#4A3B47",
-                      padding: "12px 16px",
-                      borderRadius: isMe
-                        ? "18px 18px 4px 18px"
-                        : "18px 18px 18px 4px",
-                      fontSize: 14.5,
-                      lineHeight: 1.5,
-                      boxShadow: "0 4px 14px -6px rgba(232,92,138,0.2)",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {m.content}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      color: "#C79AB0",
-                      marginTop: 3,
-                      padding: isMe ? "0 4px 0 0" : "0 0 0 4px",
-                    }}
-                  >
-                    {formatTime(m.timestamp)}
-                  </div>
-                </div>
-              );
-            })
+                  );
+                })}
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* Input Bar */}
-        <div style={{ padding: 14, background: "#FFFFFF", borderTop: "2px solid #FBEBF1" }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              style={{
-                flex: 1,
-                padding: "13px 16px",
-                borderRadius: 20,
-                border: "2px solid #F6D9E4",
-                outline: "none",
-                fontSize: 14.5,
-                fontFamily: "'Quicksand', sans-serif",
-                color: "#4A3B47",
-                background: "#FFFBFD",
-              }}
-              placeholder={
-                activeTarget === "global"
-                  ? "Message Everyone... 🎀"
-                  : `Message ${activeTargetUserObj?.username || activeTarget}... ✨`
-              }
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-            />
-            <button
-              onClick={send}
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: "50%",
-                border: "none",
-                background: "linear-gradient(135deg, #FF8FAB, #E85C8A)",
-                color: "#fff",
-                fontSize: 18,
-                cursor: "pointer",
-                flexShrink: 0,
-                boxShadow: "0 4px 12px rgba(232, 92, 138, 0.4)",
-              }}
-            >
-              ➤
-            </button>
+          {/* How to Chat Instructions */}
+          <div
+            style={{
+              background: "#FFF5F8",
+              borderBottom: "1px dashed #F6CEFC",
+              padding: "6px 14px",
+              fontSize: 11,
+              color: "#A46682",
+              textAlign: "center",
+            }}
+          >
+            💡 Open a <strong>2nd browser tab/window</strong> with a 2nd email to test multi-user chat!
+          </div>
+
+          {/* Chat Messages Feed */}
+          <div
+            ref={scrollRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "18px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              background: "#FAF4F7",
+            }}
+          >
+            {filteredMessages.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#C79AB0",
+                  marginTop: 40,
+                  fontSize: 14,
+                }}
+              >
+                {HELLO_KITTY_AVATAR(50)}
+                <div style={{ marginTop: 12, fontFamily: "'Fredoka', sans-serif", fontSize: 16 }}>
+                  {activeTarget === "global"
+                    ? "Welcome to Pyaru Pyaru Baatee! 🎀"
+                    : `No messages with ${activeTargetUserObj?.username || activeTarget} yet!`}
+                </div>
+                <div style={{ fontSize: 12.5, marginTop: 4 }}>
+                  Type a message below to start talking! ✨🐾
+                </div>
+              </div>
+            ) : (
+              filteredMessages.map((m) => {
+                const isMe = m.senderEmail === email.toLowerCase();
+                return (
+                  <div
+                    key={m.id}
+                    className="msg-bubble-animated"
+                    style={{
+                      alignSelf: isMe ? "flex-end" : "flex-start",
+                      maxWidth: "80%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: isMe ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    {!isMe && (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#B4577A",
+                          marginBottom: 3,
+                          paddingLeft: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        {BOW(14)} {m.senderUsername}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        background: isMe
+                          ? "linear-gradient(135deg, #FF8FAB, #E85C8A)"
+                          : "#FFFFFF",
+                        color: isMe ? "#FFFFFF" : "#4A3B47",
+                        padding: "12px 16px",
+                        borderRadius: isMe
+                          ? "18px 18px 4px 18px"
+                          : "18px 18px 18px 4px",
+                        fontSize: 14.5,
+                        lineHeight: 1.5,
+                        boxShadow: "0 4px 14px -6px rgba(232,92,138,0.2)",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {m.content}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "#C79AB0",
+                        marginTop: 3,
+                        padding: isMe ? "0 4px 0 0" : "0 0 0 4px",
+                      }}
+                    >
+                      {formatTime(m.timestamp)}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Input Bar */}
+          <div style={{ padding: 14, background: "#FFFFFF", borderTop: "2px solid #FBEBF1" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                style={{
+                  flex: 1,
+                  padding: "13px 16px",
+                  borderRadius: 20,
+                  border: "2px solid #F6D9E4",
+                  outline: "none",
+                  fontSize: 14.5,
+                  fontFamily: "'Quicksand', sans-serif",
+                  color: "#4A3B47",
+                  background: "#FFFBFD",
+                }}
+                placeholder={
+                  activeTarget === "global"
+                    ? "Message Everyone... 🎀"
+                    : `Message ${activeTargetUserObj?.username || activeTarget}... ✨`
+                }
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && send()}
+              />
+              <button
+                onClick={send}
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "linear-gradient(135deg, #FF8FAB, #E85C8A)",
+                  color: "#fff",
+                  fontSize: 18,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  boxShadow: "0 4px 12px rgba(232, 92, 138, 0.4)",
+                }}
+              >
+                ➤
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
