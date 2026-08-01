@@ -66,9 +66,9 @@ const PawDivider = () => (
   </div>
 );
 
-const CHANNEL_NAME = "kitty_chat_broadcast_v3";
-const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v3";
-const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v3";
+const CHANNEL_NAME = "kitty_chat_broadcast_v4";
+const GLOBAL_MSGS_KEY = "kitty_chat_all_messages_v4";
+const REGISTERED_USERS_KEY = "kitty_chat_registered_users_v4";
 
 const AVATAR_COLORS = [
   "#FF8FAB",
@@ -108,7 +108,7 @@ export default function KittyChat() {
   const scrollRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Load registered users list
+  // Helper to load registered users
   const loadRegisteredUsers = () => {
     try {
       const raw = localStorage.getItem(REGISTERED_USERS_KEY);
@@ -134,7 +134,7 @@ export default function KittyChat() {
     return updated;
   };
 
-  // Load all messages
+  // Helper to load messages
   const loadAllMessages = () => {
     try {
       const raw = localStorage.getItem(GLOBAL_MSGS_KEY);
@@ -152,15 +152,26 @@ export default function KittyChat() {
     }
   };
 
-  // Scroll on message updates
+  // Scroll to bottom on message updates
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, activeTarget]);
 
-  // Initial load
+  // Initial load + Storage Event listener for cross-tab sync
   useEffect(() => {
     setRegisteredUsers(loadRegisteredUsers());
     setMessages(loadAllMessages());
+
+    const handleStorageChange = (e) => {
+      if (e.key === GLOBAL_MSGS_KEY) {
+        setMessages(loadAllMessages());
+      } else if (e.key === REGISTERED_USERS_KEY) {
+        setRegisteredUsers(loadRegisteredUsers());
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   // BroadcastChannel for Real-time Messaging & Presence & User Registry Sync
@@ -173,7 +184,9 @@ export default function KittyChat() {
       if (type === "NEW_MESSAGE") {
         setMessages((prev) => {
           if (prev.some((m) => m.id === payload.id)) return prev;
-          return [...prev, payload];
+          const updated = [...prev, payload];
+          saveAllMessages(updated);
+          return updated;
         });
       } else if (type === "PRESENCE_PING") {
         if (payload?.email) {
@@ -906,7 +919,7 @@ export default function KittyChat() {
           </div>
         )}
 
-        {/* Tip / Banner for testing */}
+        {/* How to Chat Instructions */}
         <div
           style={{
             background: "#FFF5F8",
@@ -917,7 +930,7 @@ export default function KittyChat() {
             textAlign: "center",
           }}
         >
-          💡 Open a <strong>new browser window/tab</strong> with another name to chat live with yourself!
+          💡 Open a <strong>2nd browser tab/window</strong> with a different name to test talking between 2 users!
         </div>
 
         {/* Chat Messages Feed */}
