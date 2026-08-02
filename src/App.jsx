@@ -198,10 +198,10 @@ const PawDivider = () => (
 
 const LOVELY_MESSAGES = [
   "🎀 Spread love & sweetness everywhere you go! ✨",
-  "💖 Pyaru Pyaru Baatee — making every conversation special! 🌸",
+  "💖 hello kitty chatbot — making every conversation special! 🌸",
   "🐾 Soft paws, warm hearts, and sweet conversations! 🎀",
   "✨ You are wonderful just the way you are! 💕",
-  "🎀 Happiness is chatting with friends on Pyaru Pyaru Baatee! ✨",
+  "🎀 Happiness is chatting with friends on hello kitty chatbot! ✨",
   "🌸 Sending virtual hugs & warm pastel wishes! 💖",
   "✨ Life is sweeter when we share lovely moments together! 🎀",
 ];
@@ -915,7 +915,7 @@ export default function KittyChat() {
             gap: 6,
           }}
         >
-          <span>Pyaru Pyaru Baatee</span> 🎀
+          <span>hello kitty chatbot</span> 🎀
         </div>
         {HELLO_KITTY_MASCOT({ wave: true })}
         <div style={{ marginTop: 10, fontSize: 13, color: "#B4577A", fontWeight: 700 }}>
@@ -1020,7 +1020,7 @@ export default function KittyChat() {
       {screen !== "chat" ? (
         <div style={styles.card}>
           <div style={{ display: "flex", justifyContent: "center" }}>{HELLO_KITTY_AVATAR(68)}</div>
-          <div style={styles.title}>Pyaru Pyaru Baatee 🎀</div>
+          <div style={styles.title}>hello kitty chatbot 🎀</div>
           <div style={styles.subtitle}>Enter your username to enter the chat room</div>
 
           <input
@@ -1111,7 +1111,7 @@ export default function KittyChat() {
                   }}
                 >
                   {activeTarget === "global"
-                    ? "Pyaru Pyaru Baatee 🎀"
+                    ? "hello kitty chatbot 🎀"
                     : `💬 ${activeTargetUserObj?.name || activeTarget}`}
                 </div>
                 <div
@@ -1505,7 +1505,7 @@ export default function KittyChat() {
                 {HELLO_KITTY_AVATAR(44)}
                 <div style={{ marginTop: 8, fontFamily: "'Fredoka', sans-serif", fontSize: 14.5 }}>
                   {activeTarget === "global"
-                    ? "Welcome to Pyaru Pyaru Baatee! 🎀"
+                    ? "Welcome to hello kitty chatbot! 🎀"
                     : `No messages with ${activeTargetUserObj?.name || activeTarget} yet!`}
                 </div>
                 <div style={{ fontSize: 11.5, marginTop: 4 }}>
